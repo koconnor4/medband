@@ -1,5 +1,7 @@
-__all__=['colfax','stone','photometry','medbandfig']
+__all__=['colfax','stone','camille','bush', 'phot']#,'medbandfig']
 import colfax
 import stone
-import photometry
-import medbandfig
+import camille
+import bush
+import phot
+#import medbandfig
