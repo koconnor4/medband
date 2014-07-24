@@ -3,21 +3,52 @@ import mpltools
 from matplotlib import cm
 import numpy as np
 from matplotlib import pyplot as pl
-
-ALPHA2FILTER = {'H':'F160W','N':'F140W','J':'F125W',
-                'Q':'F153M','P':'F139M','O':'F127M',
-                '7':'F763M','8':'F845M',
-                'X':'F775W','I':'F814W',
-                }
+from __init__ import _ALPHA2FILTER
 
 
-def plotGridz( simgridIa, medbands='OPQ', broadbands='YJH', age=0 ):
+def plotbands(z = 1.2):
+    """ plot a SNIa spectrum at the given z, overlaid with medium bands
+    :param z:
+    :return:
+    """
+    import stardust
+    from demofig import w763,f763,w845,f845,w139,f139
+    w1a, f1a = stardust.snsed.getsed( sedfile='/usr/local/SNDATA_ROOT/snsed/Hsiao07.dat', day=0 )
+
+    w1az = w1a * (1+z)
+    f1az = f1a / f1a.max() / 2.
+    ax18 = pl.gca() # subplot(3,2,1)
+    ax18.plot(w1az, f1az, ls='-', lw=0.7, color='0.5', label='_nolegend_')
+    ax18.plot(w763, f763, ls='-', color='DarkOrchid',label='F763M')
+    ax18.plot(w845, f845, ls='-',color='Teal', label='F845M')
+    ax18.plot(w139, f139, ls='-',color='Maroon', label='F139M')
+    #ax18.fill_between( w1az, np.where(f763>0.01,f1az,0), color='DarkOrchid', alpha=0.3 )
+    #ax18.fill_between( w1az, f1az, where=((w1az>13500) & (w1az<14150)), color='teal', alpha=0.3 )
+    #ax18.fill_between( w1az, f1az, where=((w1az>15000) & (w1az<15700)), color='Maroon', alpha=0.3 )
+    ax18.text(0.95,0.4, 'SNIa\n@ z=%.1f'%(z), color='k',ha='right',va='bottom',fontweight='bold', transform=ax18.transAxes, fontsize='large')
+    ax18.set_xlim( 6500, 16000 )
+    pl.setp(ax18.get_xticklabels(), visible=False)
+    pl.setp(ax18.get_yticklabels(), visible=False)
+    ax18.text( 7630, 0.65, 'F763M', ha='right', va='center', color='DarkOrchid', fontweight='bold')
+    ax18.text( 8450, 0.65, 'F845M', ha='center', va='center', color='Teal', fontweight='bold')
+    ax18.text( 13900, 0.65, 'F139M', ha='left', va='center', color='Maroon', fontweight='bold')
+
+
+def pseudocolor_vs_z( simgridIa, medbands='OPQ', broadbands='JNH', age=0 ):
+    """  Plot the med-broad pseudo colors vs z.
+    :param simgridIa:
+    :param medbands:
+    :param broadbands:
+    :param age:
+    :return:
+    """
+    # TODO : allow user to input colors, not separated bands
     cmap = cm.jet
 
     nrows = len(broadbands)
     for medband, broadband, irow in zip(medbands,broadbands,range(nrows)) :
-        medfilt = ALPHA2FILTER[medband]
-        broadfilt = ALPHA2FILTER[broadband]
+        medfiltname = _ALPHA2FILTER[medband]
+        broadfiltname = _ALPHA2FILTER[broadband]
         iB = simgridIa.BANDS.index( broadband )
         iM = simgridIa.BANDS.index( medband )
 
@@ -59,12 +90,11 @@ def plotGridz( simgridIa, medbands='OPQ', broadbands='YJH', age=0 ):
         ax1.set_ylabel('%s-%s'%(medfiltname, broadfiltname) )
         pl.setp( ax2.yaxis.get_ticklabels(), visible=False )
 
-def circlefig( sn=None, simdataMC=None, simIaGrid=None,
+def circlefig( sn, simdataMC=None, simIaGrid=None,
                color1='O-J', color2='P-N', color3=None,
                showMCpoints=True, showGridline=False,
-               linelevels = [ 0, 0.82 ], plotstyle='contourf',
-               Nbins=80, Nsim=2000, clobber=0, verbose=1,
-               snanadatfile=None ):
+               snanadatfile=None, plotstyle='points',
+               fast=False, clobber=0, verbose=1, ):
     """  Plot the results of a SNANA monte carlo simulation as a circle diagram.
 
     :param simdataMC:
@@ -77,7 +107,7 @@ def circlefig( sn=None, simdataMC=None, simIaGrid=None,
     :param snanadatfile:
     :return:
     """
-    import mcsim
+    import snanasim
     import gridsim
     import stardust
     import numpy as np
@@ -85,16 +115,19 @@ def circlefig( sn=None, simdataMC=None, simIaGrid=None,
 
     # Read in the SN, classify it, compute marginalized posterior distributions
     # for the light curve parameters  (x1,c,tpk,Av,etc)
-    if sn is None :
-        assert snanadatfile is not None, "Must provide a light curve .dat file!"
-        sn = stardust.SuperNova(snanadatfile)
+    assert sn is not None, "Must provide a light curve .dat file!"
+    if isinstance( sn, str ) :
+        sn = stardust.SuperNova(sn)
     if 'ClassSim' not in sn.__dict__ :
         print("Running doGridClassify for %s with medium bands excluded."%sn.name)
         sn.doGridClassify( bands=sn.bands.translate(None,'78LOPQ'),
-                           useLuminosityPrior=True, clobber=clobber,
-                           # nlogz=15, ncolorpar=15, ncolorlaw=1, nlumipar=15, npkmjd=20,
-                           nlogz=10, ncolorpar=5, ncolorlaw=1, nlumipar=6, npkmjd=10,
-                           omitTemplateII='IIL' )
+                           useLuminosityPrior=True,
+                           nlogz=(fast and 10) or 15,
+                           ncolorpar=(fast and 5) or 15,
+                           ncolorlaw=1,
+                           nlumipar=(fast and 6) or 15,
+                           npkmjd=(fast and 10) or 20,
+                           omitTemplateII='IIL', clobber=clobber )
     if 'x1_maxprob' not in sn.ClassSim.Ia.__dict__ :
         # TODO : plotting should not be needed, once the marginalization steps are extracted from plotClassStatsGrid
         sn.plotClassStatsGrid()
@@ -118,10 +151,19 @@ def circlefig( sn=None, simdataMC=None, simIaGrid=None,
     age, ageerr = (mjdobs-mjdpk)/(1+z), (mjdpkerr)/(1+z)
     agerange = [ age-3*ageerr, age+3*ageerr ]
 
+    if fast :
+        Nbins=30
+        Nsim=500
+        linelevels = [ 0, 0.82 ]
+    else :
+        Nbins=80
+        Nsim=2000
+        linelevels = [ 0, 0.82 ]
+
     if showMCpoints :
         # Run or read the med band Monte Carlo simulation :
         if simdataMC is None :
-            simdataMC = mcsim.dosimMC( sn,  Nsim=Nsim, bands='XI78YJNHLOPQ',
+            simdataMC = snanasim.dosimMC( sn,  Nsim=Nsim, bands='XI78YJNHLOPQ',
                                        clobber=clobber, verbose=verbose )
             simIaMC, simIbcMC, simIIMC = simdataMC
         elif isinstance( simdataMC, str ):
@@ -172,4 +214,6 @@ def circlefig( sn=None, simdataMC=None, simIaGrid=None,
 
     pl.draw()
     return (sn,simdataMC,simIaMC,simIaGrid)
+
+
 

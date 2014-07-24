@@ -14,7 +14,7 @@ def getPhot( ra=_RA, dec=_DEC, datadir=_datadir,
     """ Measure aperture photometry for SN Stone from diff images.
     """
     import glob
-    from PyIDLPhot import hstapphot
+    from hstphot import hstapphot
 
     topdir = os.path.abspath( '.' )
     os.chdir( datadir )
@@ -54,10 +54,10 @@ def getPhot( ra=_RA, dec=_DEC, datadir=_datadir,
 
 
 def dosim( nsim=2000, clobber=0, verbose=False ):
-    import mcsim
+    import snanasim
     sn = stardust.SuperNova('HST_CANDELS2_stone.dat')
-    simname = mcsim.dosimMC( sn, Nsim=nsim, clobber=clobber, verbose=verbose )
-    simdata = mcsim.readSimData(simname=simname)
+    simname = snanasim.dosimMC( sn, Nsim=nsim, clobber=clobber, verbose=verbose )
+    simdata = snanasim.readSimDataMC(simname=simname)
     return( simdata )
 
 def mkfig( simdata=None, linelevels = [ 0, 0.82 ], plotstyle='contourf',

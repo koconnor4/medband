@@ -89,11 +89,14 @@ def plotgridz( simgridIa=None, clobber=0 ):
     return( simgridIa )
 
 
-def circlefig( sn=None, simdataMC=None, simIaGrid=None ):
+def circlefig( sn=None, simdataMC=None, simIaGrid=None, fast=True, clobber=False ):
     import mkplots
+    if sn is None :
+        sn = _SNANADATFILE
     mkplots.circlefig( sn, simdataMC, simIaGrid,
                        plotstyle='points', showGridline=True,
-                       color1='O-J',color2='P-N',color3='Q-H' )
+                       color1='O-J',color2='P-N',color3='Q-H', fast=fast,
+                       clobber=clobber )
 
 
 def mkcirclefigGrid( simdataGrid=None, Nsim=100, clobber=0, verbose=1,

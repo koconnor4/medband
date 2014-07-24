@@ -93,11 +93,11 @@ def mkcirclefigMC( simdataMC=None, linelevels = [ 0, 0.82 ], plotstyle='contourf
     :param snanadatfile:
     :return:
     """
-    import mcsim
+    import snanasim
     sn = stardust.SuperNova(snanadatfile)
 
     if simdataMC is None :
-        simdataMC = mcsim.dosimMC( sn,  Nsim=Nsim, bands='XI78YJNHLOPQ',
+        simdataMC = snanasim.dosimMC( sn,  Nsim=Nsim, bands='XI78YJNHLOPQ',
                                    clobber=clobber, verbose=verbose )
     simIa, simIbc, simII = simdataMC
 
@@ -291,29 +291,6 @@ def plotPhot(label=False):
     if label :
         ax2.text( 0.95,0.95,'GND13Cam', transform=ax2.transAxes, ha='right',va='top',fontsize='large')
 
-
-def plotbands(z = 1.2):
-    import stardust
-    from mcsim import w763,f763,w845,f845,w139,f139
-    w1a, f1a = stardust.snsed.getsed( sedfile='/usr/local/SNDATA_ROOT/snsed/Hsiao07.dat', day=0 )
-
-    w1az = w1a * (1+z)
-    f1az = f1a / f1a.max() / 2.
-    ax18 = pl.gca() # subplot(3,2,1)
-    ax18.plot(w1az, f1az, ls='-', lw=0.7, color='0.5', label='_nolegend_')
-    ax18.plot(w763, f763, ls='-', color='DarkOrchid',label='F763M')
-    ax18.plot(w845, f845, ls='-',color='Teal', label='F845M')
-    ax18.plot(w139, f139, ls='-',color='Maroon', label='F139M')
-    #ax18.fill_between( w1az, np.where(f763>0.01,f1az,0), color='DarkOrchid', alpha=0.3 )
-    #ax18.fill_between( w1az, f1az, where=((w1az>13500) & (w1az<14150)), color='teal', alpha=0.3 )
-    #ax18.fill_between( w1az, f1az, where=((w1az>15000) & (w1az<15700)), color='Maroon', alpha=0.3 )
-    ax18.text(0.95,0.4, 'SNIa\n@ z=%.1f'%(z), color='k',ha='right',va='bottom',fontweight='bold', transform=ax18.transAxes, fontsize='large')
-    ax18.set_xlim( 6500, 16000 )
-    pl.setp(ax18.get_xticklabels(), visible=False)
-    pl.setp(ax18.get_yticklabels(), visible=False)
-    ax18.text( 7630, 0.65, 'F763M', ha='right', va='center', color='DarkOrchid', fontweight='bold')
-    ax18.text( 8450, 0.65, 'F845M', ha='center', va='center', color='Teal', fontweight='bold')
-    ax18.text( 13900, 0.65, 'F139M', ha='left', va='center', color='Maroon', fontweight='bold')
 
 def circlefig( sn=None, simdataMC=None, simIaGrid=None ):
     import mkplots
