@@ -66,25 +66,26 @@ def mkSubs( clobber=False, verbose=False ):
 
 
 
-def plotgridz( simgridIa=None, clobber=0 ):
+def pseudocolor_vs_z( simgridIa=None, clobber=0 ):
     """  Plot medium-broad pseudo-colors from a grid simulation as a function
      of redshift.
 
     :param simgridIa: SNANA Simulation Table, or None to make/load it anew
-    :param clobber:  passed to gridsim.dosimGrid() to re-run the SNANA sims
+    :param clobber:  passed to snanasim.dosimGrid() to re-run the SNANA sims
     :return: new or existing SNANA sim table (a stardust.SimTable object)
     """
     import stardust
-    import gridsim
+    import snanasim
+    import mkplots
     from matplotlib import pyplot as pl
     sn = stardust.SuperNova('HST_CANDELS2_colfax.dat')
 
     if simgridIa is None :
         if clobber :
-            simgridIa = gridsim.dosimGrid(sn,ngridz=20, clobber=clobber, x1range=[-2,2], crange=[-0.2,0.5], trestrange=[-5,5] )
+            simgridIa = snanasim.dosimGrid(sn,ngridz=20, clobber=clobber, x1range=[-2,2], crange=[-0.2,0.5], trestrange=[-5,5] )
         else :
             simgridIa = stardust.SimTable( 'sim_colfax_medbandGrid_Ia')
-    gridsim.plotgridz( simgridIa, medbands='OPQ', broadbands='JNH')
+    mkplots.pseudocolor_vs_z( simgridIa, medbands='OPQ', broadbands='JNH')
     pl.suptitle('MED BAND GRID SIM FOR SN COLFAX @ z=2.1+- 0.2', fontsize=20)
     return( simgridIa )
 
@@ -93,17 +94,20 @@ def circlefig( sn=None, simdataMC=None, simIaGrid=None, fast=True, clobber=False
     import mkplots
     if sn is None :
         sn = _SNANADATFILE
-    mkplots.circlefig( sn, simdataMC, simIaGrid,
-                       plotstyle='points', showGridline=True,
-                       color1='O-J',color2='P-N',color3='Q-H', fast=fast,
-                       clobber=clobber )
+    sn,simdataMC,simIaGrid = mkplots.circlefig(
+        sn, simdataMC, simIaGrid,
+        plotstyle='points', showGridline=True,
+        color1='O-J',color2='P-N',color3='Q-H',
+        fast=fast, clobber=clobber )
+    return( sn,simdataMC,simIaGrid  )
 
 
-def mkcirclefigGrid( simdataGrid=None, Nsim=100, clobber=0, verbose=1,
+def mkcirclefigGrid( simdataGrid=None, clobber=0,
                      snanadatfile=_SNANADATFILE ):
     """  Plot the results of a SNANA Grid simulation as a circle diagram.
     """
-    import gridsim
+    import snanasim
+    import mkplots
     import stardust
     import numpy as np
     from matplotlib import pyplot as pl
@@ -111,7 +115,7 @@ def mkcirclefigGrid( simdataGrid=None, Nsim=100, clobber=0, verbose=1,
     sn = stardust.SuperNova(snanadatfile)
     if simdataGrid is None :
         if clobber :
-            simdataGrid = gridsim.dosimGrid(sn,ngridz=20, clobber=clobber, x1range=[-2,2], crange=[-0.2,0.5], trestrange=[-5,5] )
+            simdataGrid = snanasim.dosimGrid(sn,ngridz=20, clobber=clobber, x1range=[-2,2], crange=[-0.2,0.5], trestrange=[-5,5] )
         else :
             simdataGrid = stardust.SimTable( 'sim_colfax_medbandGrid_Ia')
 
@@ -123,11 +127,11 @@ def mkcirclefigGrid( simdataGrid=None, Nsim=100, clobber=0, verbose=1,
 
     fig = pl.gcf()
     ax1 = fig.add_subplot( 2,2,1 )
-    gridsim.plotgridColorColor( simdataGrid,  'O-J', 'P-N' )
+    mkplots.gridsim_circleplot( simdataGrid,  'O-J', 'P-N' )
     ax2 = fig.add_subplot( 2,2,2 )
-    gridsim.plotgridColorColor( simdataGrid, 'Q-H', 'P-N' )
+    mkplots.gridsim_circleplot( simdataGrid, 'Q-H', 'P-N' )
     ax2 = fig.add_subplot( 2,2,3 )
-    gridsim.plotgridColorColor( simdataGrid, 'O-J', 'Q-H' )
+    mkplots.gridsim_circleplot( simdataGrid, 'O-J', 'Q-H' )
 
     pl.draw()
     return simdataGrid

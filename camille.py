@@ -64,16 +64,17 @@ def plotgridz( simgridIa=None, clobber=0 ):
     :return: new or existing SNANA sim table (a stardust.SimTable object)
     """
     import stardust
-    import gridsim
+    import snanasim
+    import mkplots
     from matplotlib import pyplot as pl
     sn = stardust.SuperNova('HST_CANDELS2_camille.dat')
 
     if simgridIa is None :
         if clobber :
-            simgridIa = gridsim.dosimGrid(sn,ngridz=20, clobber=clobber, x1range=[-2,2], crange=[-0.2,0.5], trestrange=[-5,5] )
+            simgridIa = snanasim.dosimGrid(sn,ngridz=20, clobber=clobber, x1range=[-2,2], crange=[-0.2,0.5], trestrange=[-5,5] )
         else :
             simgridIa = stardust.SimTable( 'sim_camille_medbandGrid_Ia')
-    gridsim.plotgridz( simgridIa, medbands='78Q', broadbands='XIH')
+    mkplots.pseudocolor_vs_z( simgridIa, medbands='78Q', broadbands='XIH')
     pl.suptitle('MED BAND GRID SIM FOR SN CAMILLE @ z=1.2+- 0.2', fontsize=20)
     return( simgridIa )
 
@@ -298,3 +299,30 @@ def circlefig( sn=None, simdataMC=None, simIaGrid=None ):
                        plotstyle='contourf', showGridline=True,
                        color1='7-X',color2='8-I',color3='P-N' )
 
+def snIaspec_with_medbands(z = 1.2):
+    """ plot a SNIa spectrum at the given z, overlaid with medium bands
+    matching the SN Camille obs set.
+    :param z:
+    :return:
+    """
+    import stardust
+    from demofig import w763,f763,w845,f845,w139,f139
+    w1a, f1a = stardust.snsed.getsed( sedfile='/usr/local/SNDATA_ROOT/snsed/Hsiao07.dat', day=0 )
+
+    w1az = w1a * (1+z)
+    f1az = f1a / f1a.max() / 2.
+    ax18 = pl.gca() # subplot(3,2,1)
+    ax18.plot(w1az, f1az, ls='-', lw=0.7, color='0.5', label='_nolegend_')
+    ax18.plot(w763, f763, ls='-', color='DarkOrchid',label='F763M')
+    ax18.plot(w845, f845, ls='-',color='Teal', label='F845M')
+    ax18.plot(w139, f139, ls='-',color='Maroon', label='F139M')
+    #ax18.fill_between( w1az, np.where(f763>0.01,f1az,0), color='DarkOrchid', alpha=0.3 )
+    #ax18.fill_between( w1az, f1az, where=((w1az>13500) & (w1az<14150)), color='teal', alpha=0.3 )
+    #ax18.fill_between( w1az, f1az, where=((w1az>15000) & (w1az<15700)), color='Maroon', alpha=0.3 )
+    ax18.text(0.95,0.4, 'SNIa\n@ z=%.1f'%(z), color='k',ha='right',va='bottom',fontweight='bold', transform=ax18.transAxes, fontsize='large')
+    ax18.set_xlim( 6500, 16000 )
+    pl.setp(ax18.get_xticklabels(), visible=False)
+    pl.setp(ax18.get_yticklabels(), visible=False)
+    ax18.text( 7630, 0.65, 'F763M', ha='right', va='center', color='DarkOrchid', fontweight='bold')
+    ax18.text( 8450, 0.65, 'F845M', ha='center', va='center', color='Teal', fontweight='bold')
+    ax18.text( 13900, 0.65, 'F139M', ha='left', va='center', color='Maroon', fontweight='bold')
