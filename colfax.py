@@ -2,6 +2,7 @@
 # S.Rodney
 # 2014.05.04
 
+_SNANADATFILE = 'HST_CANDELS2_colfax.dat'
 
 def mkTemplates( clobber=False, verbose=False):
     """ Make med-band templates from sndrizpipe epoch 00 broad-band images.
@@ -62,3 +63,69 @@ def mkSubs( clobber=False, verbose=False ):
         diffimage='colfax.e%02i/colfax_f140w_e%02i-e00_sub_sci.fits'%(epoch,epoch)
         imageops.imsubtract( template, snimage, diffimage,
                              clobber=clobber, verbose=verbose )
+
+
+
+def plotgridz( simgridIa=None, clobber=0 ):
+    """  Plot medium-broad pseudo-colors from a grid simulation as a function
+     of redshift.
+
+    :param simgridIa: SNANA Simulation Table, or None to make/load it anew
+    :param clobber:  passed to gridsim.dosimGrid() to re-run the SNANA sims
+    :return: new or existing SNANA sim table (a stardust.SimTable object)
+    """
+    import stardust
+    import gridsim
+    from matplotlib import pyplot as pl
+    sn = stardust.SuperNova('HST_CANDELS2_colfax.dat')
+
+    if simgridIa is None :
+        if clobber :
+            simgridIa = gridsim.dosimGrid(sn,ngridz=20, clobber=clobber, x1range=[-2,2], crange=[-0.2,0.5], trestrange=[-5,5] )
+        else :
+            simgridIa = stardust.SimTable( 'sim_colfax_medbandGrid_Ia')
+    gridsim.plotgridz( simgridIa, medbands='OPQ', broadbands='JNH')
+    pl.suptitle('MED BAND GRID SIM FOR SN COLFAX @ z=2.1+- 0.2', fontsize=20)
+    return( simgridIa )
+
+
+def circlefig( sn=None, simdataMC=None, simIaGrid=None ):
+    import mkplots
+    mkplots.circlefig( sn, simdataMC, simIaGrid,
+                       plotstyle='points', showGridline=True,
+                       color1='O-J',color2='P-N',color3='Q-H' )
+
+
+def mkcirclefigGrid( simdataGrid=None, Nsim=100, clobber=0, verbose=1,
+                     snanadatfile=_SNANADATFILE ):
+    """  Plot the results of a SNANA Grid simulation as a circle diagram.
+    """
+    import gridsim
+    import stardust
+    import numpy as np
+    from matplotlib import pyplot as pl
+
+    sn = stardust.SuperNova(snanadatfile)
+    if simdataGrid is None :
+        if clobber :
+            simdataGrid = gridsim.dosimGrid(sn,ngridz=20, clobber=clobber, x1range=[-2,2], crange=[-0.2,0.5], trestrange=[-5,5] )
+        else :
+            simdataGrid = stardust.SimTable( 'sim_colfax_medbandGrid_Ia')
+
+    mjdmedband = sn.MJD[ np.where( (sn.FLT=='7') | (sn.FLT=='8') | (sn.FLT=='P')) ]
+    if len(mjdmedband)>0 :
+        mjdobs = np.median( mjdmedband )
+    else :
+        mjdobs = sn.pkmjd
+
+    fig = pl.gcf()
+    ax1 = fig.add_subplot( 2,2,1 )
+    gridsim.plotgridColorColor( simdataGrid,  'O-J', 'P-N' )
+    ax2 = fig.add_subplot( 2,2,2 )
+    gridsim.plotgridColorColor( simdataGrid, 'Q-H', 'P-N' )
+    ax2 = fig.add_subplot( 2,2,3 )
+    gridsim.plotgridColorColor( simdataGrid, 'O-J', 'Q-H' )
+
+    pl.draw()
+    return simdataGrid
+

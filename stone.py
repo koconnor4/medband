@@ -54,10 +54,10 @@ def getPhot( ra=_RA, dec=_DEC, datadir=_datadir,
 
 
 def dosim( nsim=2000, clobber=0, verbose=False ):
-    import medbandfig
+    import mcsim
     sn = stardust.SuperNova('HST_CANDELS2_stone.dat')
-    simname = medbandfig.doMedBandSim( sn, Nsim=nsim, clobber=clobber, verbose=verbose )
-    simdata = medbandfig.readSimData(simname=simname)
+    simname = mcsim.dosimMC( sn, Nsim=nsim, clobber=clobber, verbose=verbose )
+    simdata = mcsim.readSimData(simname=simname)
     return( simdata )
 
 def mkfig( simdata=None, linelevels = [ 0, 0.82 ], plotstyle='contourf',

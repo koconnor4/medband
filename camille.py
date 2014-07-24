@@ -55,52 +55,83 @@ def getPhot( ra=_RA, dec=_DEC, datadir=_datadir, stackfile=_STACKFILE,
     return( magdict )
 
 
-def dosim( nsim=2000, clobber=0, verbose=False,
-           snanadatfile=_SNANADATFILE, smear=False ):
-    """ Run the MC simulation.
-    Set smear=False to get no magnitude smearing.  For Ia this means no range
-    of x1 or c, and for both Ia and CC it means no intrinsic mag smearing.
+def plotgridz( simgridIa=None, clobber=0 ):
+    """  Plot medium-broad pseudo-colors from a grid simulation as a function
+     of redshift.
+
+    :param simgridIa: SNANA Simulation Table, or None to make/load it anew
+    :param clobber:  passed to gridsim.dosimGrid() to re-run the SNANA sims
+    :return: new or existing SNANA sim table (a stardust.SimTable object)
     """
-    import medbandfig
-    sn = stardust.SuperNova( snanadatfile )
-    sn.REDSHIFT_FINAL = '1.2 +- 0.2'
-    simname = medbandfig.doMedBandSim( sn, Nsim=nsim, smear=smear, clobber=clobber, verbose=verbose )
-    simdata = medbandfig.readSimData(simname=simname)
-    return( simdata )
+    import stardust
+    import gridsim
+    from matplotlib import pyplot as pl
+    sn = stardust.SuperNova('HST_CANDELS2_camille.dat')
 
-def mkfig( simdata=None, linelevels = [ 0, 0.82 ], plotstyle='contourf',
-           Nbins=80, nsim=2000, clobber=0, verbose=1,
+    if simgridIa is None :
+        if clobber :
+            simgridIa = gridsim.dosimGrid(sn,ngridz=20, clobber=clobber, x1range=[-2,2], crange=[-0.2,0.5], trestrange=[-5,5] )
+        else :
+            simgridIa = stardust.SimTable( 'sim_camille_medbandGrid_Ia')
+    gridsim.plotgridz( simgridIa, medbands='78Q', broadbands='XIH')
+    pl.suptitle('MED BAND GRID SIM FOR SN CAMILLE @ z=1.2+- 0.2', fontsize=20)
+    return( simgridIa )
+
+
+def mkcirclefigMC( simdataMC=None, linelevels = [ 0, 0.82 ], plotstyle='contourf',
+           Nbins=80, Nsim=2000, clobber=0, verbose=1,
            snanadatfile=_SNANADATFILE ):
-    if simdata is None :
-        simdata = dosim( nsim=nsim, clobber=clobber, verbose=verbose )
+    """  Plot the results of a SNANA monte carlo simulation as a circle diagram.
 
-    pl.clf()
+    :param simdataMC:
+    :param linelevels:
+    :param plotstyle:
+    :param Nbins:
+    :param nsim:
+    :param clobber:
+    :param verbose:
+    :param snanadatfile:
+    :return:
+    """
+    import mcsim
     sn = stardust.SuperNova(snanadatfile)
-    simIa, simIbc, simII = simdata
+
+    if simdataMC is None :
+        simdataMC = mcsim.dosimMC( sn,  Nsim=Nsim, bands='XI78YJNHLOPQ',
+                                   clobber=clobber, verbose=verbose )
+    simIa, simIbc, simII = simdataMC
 
     mjdmedband = sn.MJD[ np.where( (sn.FLT=='7') | (sn.FLT=='8') | (sn.FLT=='P')) ]
     mjdobs = np.median( mjdmedband )
 
-
     print('Binning up MC sim for color-color diagram...')
+    pl.clf()
     ax1 = pl.subplot( 2,2,1 )
     stardust.simplot.plotColorColor( simIa,  '7-I','P-N', binrange=[[-0.2,0.8],[-0.5,0.5]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
-    stardust.simplot.plotColorColor( simIbc, '7-I','P-N', binrange=[[-0.2,0.8],[-0.5,0.5]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
-    stardust.simplot.plotColorColor( simII,  '7-I','P-N', binrange=[[-0.2,0.8],[-0.5,0.5]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
+    #stardust.simplot.plotColorColor( simIbc, '7-I','P-N', binrange=[[-0.2,0.8],[-0.5,0.5]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
+    #stardust.simplot.plotColorColor( simII,  '7-I','P-N', binrange=[[-0.2,0.8],[-0.5,0.5]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
     ax2 = pl.subplot( 2,2,2 )
     stardust.simplot.plotColorColor( simIa,   '8-I','P-N', binrange=[[-0.6,0.4],[-0.5,0.5]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
-    stardust.simplot.plotColorColor( simIbc,  '8-I','P-N', binrange=[[-0.6,0.4],[-0.5,0.5]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
-    stardust.simplot.plotColorColor( simII,   '8-I','P-N', binrange=[[-0.6,0.4],[-0.5,0.5]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
+    #stardust.simplot.plotColorColor( simIbc,  '8-I','P-N', binrange=[[-0.6,0.4],[-0.5,0.5]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
+    #stardust.simplot.plotColorColor( simII,   '8-I','P-N', binrange=[[-0.6,0.4],[-0.5,0.5]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
     ax3 = pl.subplot( 2,2,3 )
     stardust.simplot.plotColorColor( simIa,   '7-I','8-I', binrange=[[-0.2,0.8],[-0.6,0.4]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
-    stardust.simplot.plotColorColor( simIbc,  '7-I','8-I', binrange=[[-0.2,0.8],[-0.6,0.4]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
-    stardust.simplot.plotColorColor( simII,   '7-I','8-I', binrange=[[-0.2,0.8],[-0.6,0.4]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
+    #stardust.simplot.plotColorColor( simIbc,  '7-I','8-I', binrange=[[-0.2,0.8],[-0.6,0.4]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
+    #stardust.simplot.plotColorColor( simII,   '7-I','8-I', binrange=[[-0.2,0.8],[-0.6,0.4]], mjdrange=[mjdobs,mjdobs], tsample=1, plotstyle=plotstyle, linelevels=linelevels, Nbins=Nbins, sidehist=False )
 
     pl.draw()
-    return(simdata)
+    return simdataMC
 
 
 def mkfig3d( simdata, dz=0.05, snanadatfile=_SNANADATFILE, ):
+    """ Plot the results of a SNANA monte carlo simulation as a 3-D circle
+    diagram.
+
+    :param simdata:
+    :param dz:
+    :param snanadatfile:
+    :return:
+    """
     from mpl_toolkits.mplot3d.axes3d import Axes3D
     from matplotlib import cm
     import mpltools
@@ -263,7 +294,7 @@ def plotPhot(label=False):
 
 def plotbands(z = 1.2):
     import stardust
-    from medbandfig import w763,f763,w845,f845,w139,f139
+    from mcsim import w763,f763,w845,f845,w139,f139
     w1a, f1a = stardust.snsed.getsed( sedfile='/usr/local/SNDATA_ROOT/snsed/Hsiao07.dat', day=0 )
 
     w1az = w1a * (1+z)
@@ -283,3 +314,10 @@ def plotbands(z = 1.2):
     ax18.text( 7630, 0.65, 'F763M', ha='right', va='center', color='DarkOrchid', fontweight='bold')
     ax18.text( 8450, 0.65, 'F845M', ha='center', va='center', color='Teal', fontweight='bold')
     ax18.text( 13900, 0.65, 'F139M', ha='left', va='center', color='Maroon', fontweight='bold')
+
+def circlefig( sn=None, simdataMC=None, simIaGrid=None ):
+    import mkplots
+    mkplots.circlefig( sn, simdataMC, simIaGrid,
+                       plotstyle='contourf', showGridline=True,
+                       color1='7-X',color2='8-I',color3='P-N' )
+
