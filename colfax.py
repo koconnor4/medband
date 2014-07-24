@@ -102,6 +102,31 @@ def circlefig( sn=None, simdataMC=None, simIaGrid=None, fast=True, clobber=False
     return( sn,simdataMC,simIaGrid  )
 
 
+
+def circlefigPoints( ):
+    """  Add measured medband photometry to an existing circle diagram in the
+    current figure.
+    :return:
+    """
+    import numpy as np
+    from matplotlib import pyplot as pl
+
+    OJ, OJerr =  25.502 - 26.254, np.sqrt( 0.199**2 + 0.125**2) # F127M - F125W
+    PN, PNerr =  24.963 - 25.078, np.sqrt( 0.082**2 + 0.052**2) # F139M - F140W
+    QH, QHerr =  25.105 - 25.147, np.sqrt( 0.116**2 + 0.113**2) # F153M - F160W
+
+    fig = pl.gcf()
+    ax1 = fig.add_subplot( 2,2,1 )
+    pt1 = ax1.errorbar( OJ, PN, PNerr, OJerr, marker='D', ms=12, capsize=0, elinewidth=1, color='k' )
+
+    ax2 = fig.add_subplot( 2,2,2 )
+    pt2 = ax2.errorbar( OJ, QH, QHerr, OJerr, marker='D', ms=12, capsize=0, elinewidth=1, color='k' )
+
+    ax3 = fig.add_subplot( 2,2,3 )
+    pt3 = ax3.errorbar( OJ, QH, QHerr, OJerr, marker='D', ms=12, capsize=0, elinewidth=1, color='k' )
+    return( pt1, pt2, pt3 )
+
+
 def mkcirclefigGrid( simdataGrid=None, clobber=0,
                      snanadatfile=_SNANADATFILE ):
     """  Plot the results of a SNANA Grid simulation as a circle diagram.

@@ -128,7 +128,13 @@ def dosimGrid( sn, ngridz=50, bands='X7I8LYOJPNQH',
     """
     import stardust
     simname = 'sim_'+sn.nickname+'_medbandGrid'
-    zrange = [ sn.z - sn.zerr, sn.z + sn.zerr ]
+
+    if 'ClassSim' in sn.__dict__ :
+        # we allow a generous range of possible redshifts, up to dz=0.2 or 10-sigma
+        zrange = [ sn.ClassSim.Ia.z_maxprob-min(0.2,10*sn.ClassSim.Ia.z_maxprob_err),
+                   sn.ClassSim.Ia.z_maxprob+min(0.2,10*sn.ClassSim.Ia.z_maxprob_err) ]
+    else :
+        zrange = [ sn.z - sn.zerr, sn.z + sn.zerr ]
 
     stardust.simulate.mkgridsimlib( simname+'.simlib', survey='HST',
                                     field='default', bands=bands,

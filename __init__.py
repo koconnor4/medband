@@ -1,13 +1,12 @@
-__all__=['colfax','stone','camille','bush', 'phot', 'gridsim', 'snanasim.py','mkplots']#,'medbandfig']
+__all__=['colfax','stone','camille','bush', 'phot', 'snanasim','mkplots','demofig']
 import colfax
 import stone
 import camille
 import bush
 import phot
-import gridsim
 import snanasim
 import mkplots
-#import medbandfig
+import demofig
 
 _ALPHA2FILTER = {'H':'F160W','N':'F140W','J':'F125W',
                 'Q':'F153M','P':'F139M','O':'F127M',
