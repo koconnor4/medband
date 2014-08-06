@@ -34,6 +34,59 @@ finally:
     os.chdir(topdir)
 
 
+def doDemoGridSim( zrange=[1.8,2.2], ngridz=50, bands='X7I8LYOJPNQH',
+                   x1range=[0,0], ngridx1=1,
+                   crange=[0,0], ngridc=1,
+                   avrange=[0,0], ngridav=1,
+                   trestrange = [0,0], ngridtrest=1,
+                   clobber=0, verbose=1 ) :
+    """ set up and run a SNANA Grid simulation to show the
+    medium band technique.
+    """
+    import stardust
+    simname = 'sim_medband_demo_Grid'
+
+    stardust.simulate.mkgridsimlib( simname+'.simlib', survey='HST',
+                                    field='default', bands=bands,
+                                    clobber=clobber )
+    stardust.simulate.mkinputGrid(
+        simname+'_Ia', inputfile=simname+'_Ia.input', simlibfile=simname+'.simlib',
+        simtype='Ia', clobber=clobber,
+        GENFILTERS=bands, NGRID_TREST=ngridtrest, GENRANGE_TREST=trestrange,
+        NGRID_LOGZ=ngridz, GENRANGE_REDSHIFT=zrange,
+        NGRID_LUMIPAR=ngridx1,  GENRANGE_SALT2X1=x1range,
+        NGRID_COLORPAR=ngridc, GENRANGE_SALT2C=crange,
+        NGRID_COLORLAW=1,  GENRANGE_RV=[3.1,3.1] )
+
+    stardust.simulate.mkinput( simname+'_Ibc', inputfile=simname+'_Ibc.input',
+                               simlibfile=simname+'.simlib',
+                               simtype='Ibc', ratemodel='flat',
+                               clobber=clobber, GENSOURCE='GRID',
+                               GENFILTERS=bands,
+                               NGRID_TREST=ngridtrest, GENRANGE_TREST=trestrange,
+                               NGRID_LOGZ=ngridz, GENRANGE_REDSHIFT=zrange,
+                               NGRID_COLORPAR=ngridav, GENRANGE_AV=avrange,
+                               NGRID_COLORLAW=1,  GENRANGE_RV=[3.1,3.1] )
+
+    stardust.simulate.mkinput( simname+'_II', inputfile=simname+'_II.input',
+                               simlibfile=simname+'.simlib',
+                               simtype='II', ratemodel='flat',
+                               clobber=clobber, GENSOURCE='GRID',
+                               GENFILTERS=bands,
+                               NGRID_TREST=ngridtrest, GENRANGE_TREST=trestrange,
+                               NGRID_LOGZ=ngridz, GENRANGE_REDSHIFT=zrange,
+                               NGRID_COLORPAR=ngridav, GENRANGE_AV=avrange,
+                               NGRID_COLORLAW=1,  GENRANGE_RV=[3.1,3.1] )
+
+    stardust.simulate.dosim('%s_Ia.input'%simname, verbose=verbose )
+    stardust.simulate.dosim('%s_Ibc.input'%simname, verbose=verbose )
+    stardust.simulate.dosim('%s_II.input'%simname, verbose=verbose )
+
+    simdat = stardust.SimTable( '%s_Ia'%simname)
+    return( simdat )
+
+
+
 def mkDemoFig( simdata, linelevels = [ 0, 0.82 ], plotstyle='contourf', Nbins=80, showsn=False ):
     """ construct the medium-band demo figure for the FrontierSN proposal:
     filter bandpasses on the left for three redshifts, two color-color plots on the

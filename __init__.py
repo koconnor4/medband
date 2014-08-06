@@ -1,4 +1,5 @@
-__all__=['colfax','stone','camille','bush', 'phot', 'snanasim','mkplots','demofig']
+__all__=['colfax','stone','camille','bush', 'phot', 'snanasim','mkplots',
+         'snanaDemofig','sncosmoDemofig' ]
 import colfax
 import stone
 import camille
@@ -6,7 +7,8 @@ import bush
 import phot
 import snanasim
 import mkplots
-import demofig
+import snanaDemofig
+import sncosmoDemofig
 
 _ALPHA2FILTER = {'H':'F160W','N':'F140W','J':'F125W',
                 'Q':'F153M','P':'F139M','O':'F127M',
