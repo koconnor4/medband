@@ -1,5 +1,5 @@
 __all__=['colfax','stone','camille','bush', 'phot', 'snanasim','mkplots',
-         'snanaDemofig','sncosmoDemofig' ]
+         'snanaDemofig', 'getredshift', 'classify']
 import colfax
 import stone
 import camille
@@ -8,7 +8,8 @@ import phot
 import snanasim
 import mkplots
 import snanaDemofig
-import sncosmoDemofig
+import getredshift
+import classify
 
 _ALPHA2FILTER = {'H':'F160W','N':'F140W','J':'F125W',
                 'Q':'F153M','P':'F139M','O':'F127M',
