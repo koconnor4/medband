@@ -160,17 +160,19 @@ class SncosmoSim( object ):
                 # TODO : use bifurcated gaussians for more realistic x1,c dist'ns
                 x1 = normal(0., 1.)
                 c = normal(0., 0.1)
-                # TODO : draw a random t0 within user-defined bounds
                 t0 = uniform( t0_range[0], t0_range[1] )
-                modelparams = {'z':z, 't0':0, 'x0':x0, 'x1':x1, 'c':c, 'hostebv':EBV, 'hostr_v':Rv}
+                modelparams = {'z':z, 't0':t0, 'x0':x0, 'x1':x1, 'c':c, 'hostebv':EBV, 'hostr_v':Rv}
                 t0list.append( t0 )
                 x0list.append( x0 )
                 x1list.append( x1 )
                 clist.append( c )
+                t0list.append( t0 )
             else :
                 amplitude = model.get('amplitude')
-                modelparams = {'z':z, 't0':0, 'amplitude':amplitude, 'hostebv':EBV, 'hostr_v':Rv }
+                t0 = uniform( t0_range[0], t0_range[1] )
+                modelparams = {'z':z, 't0':t0, 'amplitude':amplitude, 'hostebv':EBV, 'hostr_v':Rv }
                 amplitudelist.append( amplitude )
+                t0list.append( t0 )
             modelparamlist.append( modelparams )
 
             # Generate one simulated SN:
@@ -224,136 +226,170 @@ testsnIa = ascii.read( testsnIadat )
 testsnCC = ascii.read( testsnCCdat )
 
 
-def testClassifySNR( ntest=100, nclass=1000, clobber=False ):
-    # TODO : simulate 1000 CCSN
-    # simulate 1000 SNIa using SNOOPY and 2011fe and salt2 and Hsiao and maybe some others.
+def testClassifySNR( nsim=1000, nclass=None, outfileroot='colorColorClassify',
+                     clobber=False, verbose=True ):
     import cPickle
     import os
     import numpy as np
-    from copy import deepcopy as cp
+    from copy import deepcopy
     from numpy.random import normal
+    from time import asctime
 
-    testSimIapkl = 'colorColorClassify.testSimIa.%i.pkl'%ntest
-    testSimCCpkl = 'colorColorClassify.testSimCC.%i.pkl'%ntest
-    classSimIapkl = 'colorColorClassify.classSimIa.%i.pkl'%nclass
-    classSimCCpkl = 'colorColorClassify.classSimCC.%i.pkl'%nclass
+    if nclass is None :
+        nclass = nsim
 
-    if os.path.isfile( testSimIapkl ) and not clobber :
-        fin = open( testSimIapkl )
-        testSimIa = cPickle.load( fin )
-        fin.close()
-    else :
-        testSimIa = SncosmoSim( 'Ia' , nsim=ntest, perfect=True )
-        fout = open( testSimIapkl, 'wb' )
-        cPickle.dump( testSimIa, fout, protocol=-1 )
-        fout.close()
+    outfileIa = outfileroot + '_Ia.dat'
+    outfileCC = outfileroot + '_CC.dat'
+    if os.path.isfile( outfileIa ) and not clobber :
+        print("%s exists. Use clobber to overwrite."%outfileIa)
+    if os.path.isfile( outfileCC ) and not clobber :
+        print("%s exists. Use clobber to overwrite."%outfileCC)
 
-    if os.path.isfile( testSimCCpkl ) and not clobber :
-        fin = open( testSimCCpkl, 'rb' )
-        testSimCC = cPickle.load(fin  )
-        fin.close()
-    else :
-        testSimCC = SncosmoSim( 'CC' , nsim=ntest, perfect=True )
-        fout = open( testSimCCpkl, 'wb' )
-        cPickle.dump( testSimCC, fout, protocol=-1 )
-        fout.close()
+    classSimIapkl = 'colorColorClassify.classSimIa.%i.pkl'%nsim
+    classSimCCpkl = 'colorColorClassify.classSimCC.%i.pkl'%nsim
 
-    if os.path.isfile( classSimIapkl ) and not clobber :
+    if os.path.isfile( classSimIapkl ) and not clobber>1 :
+        if verbose: print("Loading Ia simulation from pickle : %s"%classSimIapkl)
         fin = open( classSimIapkl, 'rb' )
         classSimIa = cPickle.load( fin )
         fin.close()
     else :
-        classSimIa = SncosmoSim( 'Ia' , nsim=nclass )
+        if verbose: print("Running a new Ia simulation, then saving to pickle : %s"%classSimIapkl)
+        classSimIa = SncosmoSim( 'Ia' , nsim=nsim )
         fout = open( classSimIapkl, 'wb' )
         cPickle.dump( classSimIa, fout, protocol=-1 )
         fout.close()
 
-    if os.path.isfile( classSimCCpkl ) and not clobber :
+    if os.path.isfile( classSimCCpkl ) and not clobber>1 :
+        if verbose: print("Loading CC simulation from pickle : %s"%classSimCCpkl)
         fin = open( classSimCCpkl, 'rb' )
         classSimCC = cPickle.load(fin)
         fin.close()
     else :
-        classSimCC = SncosmoSim( 'CC' , nsim=nclass )
+        if verbose: print("Running a new CC simulation, then saving to pickle : %s"%classSimCCpkl)
+        classSimCC = SncosmoSim( 'CC' , nsim=nsim )
         fout = open( classSimCCpkl, 'wb' )
         cPickle.dump( classSimCC, fout, protocol=-1 )
         fout.close()
 
-    probSNR = {}
-    zSNR = {}
-    for SNR in [10,20,30]:
-        pIalist = []
-        pCClist = []
-        for isn in range(testSimCC.nsim) :
-            testlc = cp( testSimCC.lightcurves[isn] )
-            testlc['fluxerr'] = testlc['flux'] / SNR
-            testlc['flux'] = normal( testlc['flux'], testlc['fluxerr'] )
-            sourcename = testSimCC.sourcename[isn]
-            iNotThisSource = np.where( classSimCC.sourcename != sourcename )[0]
-            classSimCCLC = [ classSimCC.lightcurves[inot] for inot in iNotThisSource ]
-            pCC = colorColorClassify( testlc, classSimIa.lightcurves, classSimCCLC )
-            pCClist.append( pCC )
-        for isn in range(testSimIa.nsim) :
-            x1 = testSimIa.x1[isn]
-            c = testSimIa.c[isn]
+    if verbose: print("Writing classification output to %s and %s "%(outfileIa, outfileCC))
+
+    # erase any existing output files, and start a new version with a header line
+    foutIa = open( outfileIa, 'w')
+    print >> foutIa, '# %s'% asctime()
+    print >> foutIa, '# Med Band Classifier Validation Test output generated with %s'% __file__
+    print >> foutIa, '# Classification samples : %s  , %s '%(classSimIapkl,classSimCCpkl)
+    print >> foutIa, '# Classifying %i simulated Type Ia SN'%nclass
+    print >> foutIa, '# P(Ia|D)  S/N   z    t0   x0   x1   c  Av   Rv'
+    foutIa.close()
+
+    foutCC = open( outfileCC, 'w')
+    print >> foutCC, '# %s'% asctime()
+    print >> foutCC, '# Med Band Classifier Validation Test output generated with %s'% __file__
+    print >> foutCC, '# Classification samples : %s  , %s '%(classSimIapkl,classSimCCpkl)
+    print >> foutCC, '# Classifying %i simulated CC SN'%nclass
+    print >> foutCC, '# P(Ia|D)   S/N   model  z  amplitude  t0  Av   Rv'
+    foutCC.close()
+
+    for isn in range(nclass) :
+        if verbose: print("Classifying CCSN %i  and SNIa %i of  %i"%(isn, isn, nclass))
+        for SNR in [10,20,30]:
+
+            # -----------------------------------------------------------------
+            # Classify one SNIa test particle :
+            x1 = classSimIa.x1[isn]
+            c = classSimIa.c[isn]
             dx1c = np.sqrt( (classSimIa.x1-x1)**2 + (classSimIa.c-c)**2 )
             iNotThisx1c = np.where( dx1c>0.05 )[0]
-            testlc = cp( testSimIa.lightcurves[isn] )
-            testlc['fluxerr'] = testlc['flux'] / SNR
-            testlc['flux'] = normal( testlc['flux'], testlc['fluxerr'] )
-            classSimIaLC = [ classSimIa.lightcurves[inot] for inot in iNotThisx1c ]
-            pIa = colorColorClassify( testlc, classSimIaLC, classSimCC.lightcurves )
-            pIalist.append( pIa )
-        probSNR[SNR] = [ np.array( pIalist ), np.array( pCClist ) ]
-        zSNR[SNR] = [ testSimIa.z, testSimCC.z ]
 
-    pzSNR = [ probSNR, zSNR ]
-    # save the arrays as pickles
-    fout = open('colorColorClassify.pzSNR.%i.%i.pkl'%(ntest,nclass),'wb')
-    cPickle.dump( pzSNR, fout, protocol=-1 )
-    fout.close()
-    return( pzSNR )
+            # Fix the S/N ratio and add appropriate noise to the perfect flux
+            testlcIa = deepcopy( classSimIa.lightcurves[isn] )
+            testlcIa['fluxerr'] = testlcIa['flux'] / SNR
+            testlcIa['flux'] = normal( testlcIa['flux'], testlcIa['fluxerr'] )
 
-def plotSNRtest01( pzSNR=None ) :
+            # exclude from the classification set any simulated SN with (almost)
+            # the same x1 and c as our test particle
+            classSimIaLCsubset = [ classSimIa.lightcurves[inot] for inot in iNotThisx1c ]
+
+            # Run the classifier and append the result to the running output file.
+            testsnIapIa = colorColorClassify( testlcIa, classSimIaLCsubset, classSimCC.lightcurves,  )
+            foutIa = open( outfileIa, 'a')
+            print >> foutIa, '%4.2f  %i  %5.3f  %7.1f   %9.3e  %5.2f  %5.2f  %5.2f  %5.2f'%(
+                testsnIapIa, SNR, classSimIa.z[isn],  classSimIa.t0[isn],
+                classSimIa.x0[isn], classSimIa.x1[isn], classSimIa.c[isn],
+                classSimIa.Av[isn], classSimIa.Rv[isn] )
+            foutIa.close()
+
+            # -----------------------------------------------------------------
+            # Classify one CCSN, excluding from the classification set any
+            #  simulated SN using the same CC model
+            testlcCC = deepcopy( classSimCC.lightcurves[isn] )
+            testlcCC['fluxerr'] = testlcCC['flux'] / SNR
+            testlcCC['flux'] = normal( testlcCC['flux'], testlcCC['fluxerr'] )
+            sourcename = classSimCC.sourcename[isn]
+            iNotThisSource = np.where( classSimCC.sourcename != sourcename )[0]
+            classSimCCLCsubset = [ classSimCC.lightcurves[inot] for inot in iNotThisSource ]
+            testsnCCpIa = colorColorClassify( testlcCC, classSimIa.lightcurves, classSimCCLCsubset )
+
+            # Append the classification result to the running output file.
+            foutCC = open( outfileCC, 'a')
+            print >> foutCC, '%4.2f  %i  %9s  %5.3f  %9.3e  %7.1f  %5.2f  %5.2f'%(
+                testsnCCpIa, SNR, classSimCC.sourcename[isn], classSimCC.z[isn],
+                classSimCC.amplitude[isn], classSimCC.t0[isn],
+                classSimCC.Av[isn], classSimCC.Rv[isn] )
+            foutCC.close()
+    if verbose: print("Done classifying %i SN of each class."%(nclass))
+
+    return( outfileIa, outfileCC )
+
+def plotSNRtest01( datfileIa='colorColorClassify_Ia.dat',
+                   datfileCC='colorColorClassify_CC.dat' ) :
     """  Plot the results of a classification validation test.
-    :param probSNR:  A dictionary produced by testClassifySNR() or a string
-           giving the filename of the testClassifySNR-produced pickle file.
     :return:
     """
     from matplotlib import pyplot as pl
     from pytools import plotsetup
     import numpy as np
-    import cPickle
+    from astropy.io import ascii
 
-    if isinstance(pzSNR, str ) :
-        fout = open(pzSNR,'rb')
-        pzSNR = cPickle.load( fout )
-        fout.close()
+    datIa = ascii.read( datfileIa, format='commented_header', header_start=-1, data_start=0)
+    datCC = ascii.read( datfileCC, format='commented_header', header_start=-1, data_start=0)
 
-    probSNR, zSNR = pzSNR
+    pIaIa = datIa['P(Ia|D)']
+    zIa = datIa['z']
+    SNRIa = datIa['S/N']
+
+    pIaCC = datCC['P(Ia|D)']
+    zCC = datCC['z']
+    SNRCC = datCC['S/N']
+
     fig1 = plotsetup.fullpaperfig( 1, figsize=[8,3])
-
-    ax1 = pl.subplot(1,3,1);
-    out1 = pl.hist( probSNR[10][0], bins=np.arange(0,1.01,0.05),
-                    color='darkmagenta', alpha=0.3 );
-    out2 = pl.hist( probSNR[10][1], bins=np.arange(0,1.01,0.05),
-                    color='teal', alpha=0.3 )
-
-    ax2 = pl.subplot(1,3,2, sharex=ax1, sharey=ax1);
-    out1 = pl.hist( probSNR[20][0], bins=np.arange(0,1.01,0.05),
-                    color='darkmagenta', alpha=0.3 );
-    out2 = pl.hist( probSNR[20][1], bins=np.arange(0,1.01,0.05),
-                    color='teal', alpha=0.3 )
-
-
-    ax3 = pl.subplot(1,3,3, sharex=ax1, sharey=ax1);
-    out1 = pl.hist( probSNR[30][0], bins=np.arange(0,1.01,0.05),
-                    color='darkmagenta', alpha=0.3 );
-    out2 = pl.hist( probSNR[30][1], bins=np.arange(0,1.01,0.05),
-                    color='teal', alpha=0.3 )
+    SNRlist = np.unique( SNRIa )
+    ncol = len(SNRlist)
+    icol=0
+    axlist = []
+    for SNR in SNRlist :
+        icol+=1
+        if icol == 1 :
+            ax1 = pl.subplot(1,ncol,icol)
+            ax = ax1
+        else :
+            ax = pl.subplot(1,ncol,icol,sharex=ax1, sharey=ax1)
+        axlist.append( ax )
+        out1 = ax.hist( pIaIa[np.where( SNRIa==SNR)[0]],
+                        bins=np.arange(0,1.01,0.05),
+                        color='darkmagenta', alpha=0.3 )
+        out2 = ax.hist( pIaCC[np.where( SNRCC==SNR)[0]],
+                        bins=np.arange(0,1.01,0.05),
+                        color='teal', alpha=0.3 )
 
     ax1.set_xlim( 0.0, 1.05 )
     ax1.set_xticks( [0.2,0.4,0.6,0.8,1.0])
 
+    ax1 = axlist[0]
+    imid = int(round(len(axlist)/2))
+    ax2 = axlist[imid]
+    ax3 = axlist[-1]
     ax2.set_xlabel('P(Ia|D)')
     ax1.set_ylabel('Number of Test SN')
 
@@ -362,70 +398,92 @@ def plotSNRtest01( pzSNR=None ) :
     ax3.yaxis.set_ticks_position('right')
     ax3.yaxis.set_ticks_position('both')
     ax3.yaxis.set_label_position('right')
-    ax1.set_title('S/N=10',color='0.3')
-    ax2.set_title('S/N=20',color='0.3')
-    ax3.set_title('S/N=30',color='0.3')
+    ax1.set_title('S/N=%i'%SNRlist[0],color='0.3')
+    ax2.set_title('S/N=%i'%SNRlist[imid],color='0.3')
+    ax3.set_title('S/N=%i'%SNRlist[-1],color='0.3')
     ax3.text( 0.1,0.95,'CCSN\nTest\nSet',color='teal',ha='left',va='top',transform=ax3.transAxes)
     ax3.text( 0.88,0.95,'SN Ia\nTest\nSet',color='darkmagenta',ha='right',va='top',transform=ax3.transAxes)
-
     pl.subplots_adjust( wspace=0, hspace=0, left=0.09, bottom=0.18, right=0.92, top=0.9)
     pl.draw()
 
 
-def plotSNRtest02( pzSNR=None ) :
+def plotSNRtest02( datfileIa='colorColorClassify_Ia.dat',
+                   datfileCC='colorColorClassify_CC.dat' ) :
     """  Plot the results of a classification validation test.
-    :param probSNR:  A dictionary produced by testClassifySNR() or a string
-           giving the filename of the testClassifySNR-produced pickle file.
     :return:
     """
     from matplotlib import pyplot as pl
     from pytools import plotsetup
     import numpy as np
-    import cPickle
+    from astropy.io import ascii
 
-    if isinstance(pzSNR, str ) :
-        fout = open(pzSNR,'rb')
-        pzSNR = cPickle.load( fout )
-        fout.close()
+    datIa = ascii.read( datfileIa, format='commented_header', header_start=-1, data_start=0)
+    datCC = ascii.read( datfileCC, format='commented_header', header_start=-1, data_start=0)
 
-    probSNR, zSNR = pzSNR
+    pIaIa = datIa['P(Ia|D)']
+    zIa = datIa['z']
+    SNRIa = datIa['S/N']
+
+    pIaCC = datCC['P(Ia|D)']
+    zCC = datCC['z']
+    SNRCC = datCC['S/N']
 
     fig2 = plotsetup.fullpaperfig( 2, figsize=[8,3])
 
     def purity( nTrue, nFalse, W=3 ):
         return( float(nTrue) / ( float(nTrue) + float(W*nFalse) ) )
 
-    for SNR in [10,20,30] :
-        zarrayIa = zSNR[SNR][0]
-        zarrayCC = zSNR[SNR][1]
-        irow = -1
-        icol = SNR/10
+    def efficiency( nTrue, nTot ):
+        return( float(nTrue) / float(nTot) )
+
+    SNRlist = np.unique( SNRIa )
+    ncol = len(SNRlist)
+    icol=0
+    axlist = []
+    for SNR in SNRlist :
+        icol+=1
+        irow=-1
+        iSNRIa = np.where( SNRIa==SNR )[0]
+        iSNRCC = np.where( SNRCC==SNR )[0]
+        zIaSNR = zIa[iSNRIa]
+        zCCSNR = zCC[iSNRCC]
         for threshold in [0.5,0.75] :
             irow+=1
-            ax = pl.subplot( 2,3, icol + irow*3)
-            nIaTrue = np.count_nonzero( probSNR[SNR][0] > threshold )
-            nIaFalse = np.count_nonzero( probSNR[SNR][1] > threshold )
+            if icol == 1 :
+                ax1 = pl.subplot(2,ncol,icol+irow*ncol)
+                ax = ax1
+            else :
+                ax = pl.subplot(2,ncol,icol+irow*ncol,sharex=ax1, sharey=ax1)
+            axlist.append( ax )
+
+            nIaTrue = np.count_nonzero( pIaIa[iSNRIa] > threshold )
+            nIaFalse = np.count_nonzero( pIaCC[iSNRCC] > threshold )
+            nIaTot = len( iSNRIa )
             ppIa = purity( nIaTrue, nIaFalse, W=3 )
             pIa = purity( nIaTrue, nIaFalse, W=1 )
+            eIa = efficiency( nIaTrue, nIaTot )
             print( 'SNR=%i, Thresh=%.2f, Purity = %.2f, Pseudo-Purity = %.2f'%(
                 SNR, threshold, pIa, ppIa ) )
             zbinmin = np.arange(1.8,2.2,0.05)
-            ppIaz, pIaz = [], []
+            ppIaz, pIaz, eIaz = [], [], []
             zbinmid = []
             for zmin in zbinmin :
                 zmax = zmin+0.05
-                izthisbinIa = np.where( (zarrayIa>=zmin) & (zarrayIa<zmax) )[0]
-                izthisbinCC = np.where( (zarrayCC>=zmin) & (zarrayCC<zmax) )[0]
+                izthisbinIa = np.where( (zIaSNR>=zmin) & (zIaSNR<zmax) )[0]
+                izthisbinCC = np.where( (zCCSNR>=zmin) & (zCCSNR<zmax) )[0]
                 if not len(izthisbinCC) : continue
                 if not len(izthisbinIa) : continue
-                nIaTrue = np.count_nonzero( probSNR[SNR][0][izthisbinIa]  > threshold )
-                nIaFalse = np.count_nonzero( probSNR[SNR][1][izthisbinCC] > threshold )
+                nIaTrue = np.count_nonzero( pIaIa[iSNRIa][izthisbinIa]  > threshold )
+                nIaFalse = np.count_nonzero( pIaCC[iSNRCC][izthisbinCC] > threshold )
+                nIaTot = len(izthisbinIa)
                 if nIaTrue == 0 and nIaFalse==0 : continue
                 ppIaz.append( purity( nIaTrue, nIaFalse, W=3 ) )
                 pIaz.append( purity( nIaTrue, nIaFalse, W=1 ) )
+                eIaz.append( efficiency( nIaTrue, nIaTot ) )
                 zbinmid.append( zmin+0.025 )
-            ax.plot( zbinmid, ppIaz, color='0.3', marker='d', ls='--', lw=1 )
-            ax.plot( zbinmid, pIaz, color='k', marker='o', ls='-', lw=1 )
+            ax.plot( zbinmid, ppIaz, color='darkorange', marker='d', ls='--', lw=1 )
+            ax.plot( zbinmid, pIaz, color='darkcyan', marker='o', ls='-', lw=1 )
+            ax.plot( zbinmid, eIaz, color='0.5', marker='^', ls=':', lw=1 )
             ax.set_xlim( 1.75, 2.25 )
             ax.set_ylim( -0.1, 1.1 )
             if icol==2 :
@@ -437,21 +495,27 @@ def plotSNRtest02( pzSNR=None ) :
             if irow==0 :
                 pl.setp( ax.get_xticklabels(), visible=False )
                 ax.set_title( 'S/N=%i'%SNR, fontsize=12, color='0.5' )
-            if irow==1 and icol==2 :
-                ax.set_xlabel('Redshift')
-            if icol==1 :
-                ax.set_ylabel('Ia Sample Purity')
+            #if irow==1 and icol==2 :
+            #    ax.set_xlabel('Redshift')
+            #if icol==1 :
+            #    ax.set_ylabel('Ia Sample Purity')
             if icol==2 :
                 ax.text( 0.5, 0.05, 'thresh=%0.2f'%(threshold), ha='center',va='bottom',
                          transform=ax.transAxes, fontsize=12, color='0.5')
 
-            if irow==0 and icol==1 :
-                ax.text( 2.22, 0.90, 'true', ha='right',va='top',color='k', fontsize=10)
-                ax.text( 2.22, 0.15, 'pseudo', ha='right',va='bottom',color='0.3', fontsize=10)
-                #ax.text( 2.22, 0.95, 'true\npurity', ha='right',va='top',color='k', fontsize=10)
-                #ax.text( 2.22, 0.05, 'pseudo\npurity', ha='right',va='bottom',color='0.3', fontsize=10)
+            if irow==0 and icol==ncol :
+                ax.text( 0.85, 0.05, 'true\npurity', ha='center',va='bottom',color='darkcyan', fontsize=10, transform=ax.transAxes)
+                ax.text( 0.5, 0.05, 'pseudo\npurity', ha='center',va='bottom',color='darkorange', fontsize=10, transform=ax.transAxes)
+                ax.text( 0.05, 0.05, 'efficiency', ha='left',va='bottom',color='0.3', fontsize=10, transform=ax.transAxes)
 
-    pl.subplots_adjust( wspace=0, hspace=0, left=0.09, bottom=0.15, right=0.92, top=0.9)
+    # make a background axis frame for x and y axis labels
+    bgAxes = pl.axes([0.05, 0.1, 0.9, 0.85],frameon=False )
+    bgAxes.set_xticks([])
+    bgAxes.set_yticks([])
+    bgAxes.set_xlabel('Redshift')
+    bgAxes.set_ylabel('Ia Sample Purity')
+    pl.subplots_adjust( wspace=0, hspace=0, left=0.08, bottom=0.18, right=0.92, top=0.9)
+
     pl.draw()
 
 
