@@ -8,11 +8,15 @@ def mkExtinctionDemoFigSmall( z=2.0 ):
     """
     import numpy as np
     import sncosmo
-    from sncosmohst import hstbandpasses, ccsnmodels
+    # from sncosmost import hstbandpasses, ccsnmodels
+    from matplotlib import rc
+    rc('text',usetex=True)
+    rc('text.latex', preamble='\usepackage[usenames]{xcolor}')
     from matplotlib import pyplot as pl
     from matplotlib import ticker
     from pytools import plotsetup
     from scipy import interpolate as scint
+
 
     fig = plotsetup.fullpaperfig( 1, [8,3] )
 
@@ -52,21 +56,41 @@ def mkExtinctionDemoFigSmall( z=2.0 ):
     intf127m = scint.interp1d( wf127m, f127m.trans, bounds_error=False, fill_value=0 )
     intf153m = scint.interp1d( wf153m, f153m.trans, bounds_error=False, fill_value=0 )
 
-
+    colorlist1, colorlist2 = [], []
     for Av,ls, alpha in zip([2,1,0],[':','--','-'],[0.1,0.3,0.5]):
         snIa.set( z=z, t0=0, hostr_v=3.1, hostebv=Av/3.1 )
+        colorlist1.append( snIa.bandmag( 'f127m','ab', 0) - snIa.bandmag( 'f125w','ab', 0) )
+        colorlist2.append( snIa.bandmag( 'f153m','ab', 0) - snIa.bandmag( 'f160w','ab', 0) )
+
         snwave = np.arange( 6000., 20000., 10. )
         snflux = snIa.flux( 0, snwave )
         snwave = snwave / 10000.
         snflux = 0.12 * snflux / snflux[400]
-        ax1.plot( snwave, snflux, color='k', ls=ls, lw=1, label='A$_V$=%.1f'%Av)
+        ax1.plot( snwave, snflux, color='k', ls=ls, lw=1, label='%.1f'%Av )
         overlap127 = np.min( [snflux, intf127m(snwave)], axis=0 )
         ax2.fill_between( snwave, np.zeros(len(snwave)), overlap127, color='darkmagenta', alpha=alpha )
         overlap153 = np.min( [snflux, intf153m(snwave)], axis=0 )
         pl.fill_between( snwave, np.zeros(len(snwave)), overlap153, color='darkorange', alpha=alpha )
 
-    ax1.legend(loc='upper left',frameon=False)#, handlelength=0.5, numpoints=3)
 
+    ax1.legend(loc='upper left', bbox_to_anchor=(0.0,0.9),frameon=False,fontsize=11 )
+    ax1.text( 0.08, 0.88, 'A$_V$', transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
+    ax1.text( 0.13, 0.88, 'F127M', color='darkmagenta',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
+    ax1.text( 0.23, 0.88, 'F153M', color='darkorange',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
+
+    ax1.text( 0.14, 0.78, '%.3f'%colorlist1[0], color='darkmagenta',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
+    ax1.text( 0.23, 0.78, '%.3f'%colorlist2[0], color='darkorange',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
+
+    ax1.text( 0.14, 0.68, '%.3f'%colorlist1[1], color='darkmagenta',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
+    ax1.text( 0.23, 0.68, '%.3f'%colorlist2[1], color='darkorange',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
+
+    ax1.text( 0.14, 0.58, '%.3f'%colorlist1[2], color='darkmagenta',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
+    ax1.text( 0.23, 0.58, '%.3f'%colorlist2[2], color='darkorange',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
+
+    #           title=+
+    #                 '\\textcolor{DarlMagenta}{W}' +
+    #                 '\\textcolor{F153M-F160W')#, handlelength=0.5, numpoints=3)
+    # ax1.text( 0.15,0.95,,ha='left',va='bottom')
 
     ax1.yaxis.set_major_locator( ticker.MultipleLocator( 0.1 ) )
     ax1.yaxis.set_minor_locator( ticker.MultipleLocator( 0.05 ) )

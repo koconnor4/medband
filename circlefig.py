@@ -1,0 +1,576 @@
+from matplotlib import pyplot as pl
+import numpy as np
+import sncosmo
+# from sncosmost import hstbandpasses, ccsnmodels
+from medband_classtest import SncosmoSim, scumsum
+
+__author__ = 'rodney'
+
+
+_COLOR1 = '#882255' # maroon
+_COLOR2 = '#44AA99' # teal
+_COLOR3 = '#DDCC77' # beige
+
+class supernova( object ):
+    def __init__( self, name ):
+        self.name = name
+        self.t0err = 3
+
+    @property
+    def t0_range( self ):
+        return( [ self.mjdmedband-self.mjdpk-self.t0err,self.mjdmedband-self.mjdpk+self.t0err ] )
+
+    @property
+    def t0( self ):
+        return( self.mjdmedband-self.mjdpk )
+
+DEMO = supernova('demo')
+DEMO.mjdpk = 0.0
+DEMO.mjdmedband = 0.0
+DEMO.z_range = [1.8, 2.2]
+
+STONE = supernova('stone')
+STONE.mjdpk = 56482.
+STONE.mjdmedband = 56475.
+STONE.z_range = [1.6, 2.2]
+STONE.mag = { # from idl5 psf fitting
+            'f139m':25.4198,
+            'f140w':25.3622,
+            'f153m':25.5056,
+            'f160w':25.2278,
+            }
+STONE.magerr = { # from drop method
+            'f139m':0.182164 ,
+            'f140w':0.0920638,
+            'f153m':0.185014 ,
+            'f160w':0.0731440,
+            }
+
+COLFAX = supernova('colfax')
+COLFAX.mjdpk = 56078.
+COLFAX.mjdmedband = 56084.
+COLFAX.z_range = [1.8, 2.2]
+COLFAX.mag = {  # using idl5 composite psf model
+        'f127m':25.6632,
+        'f125w':26.1074,
+        'f139m':25.6426,
+        'f140w':25.7317,
+        'f153m':25.7860,
+        'f160w':25.9274,
+        }
+COLFAX.magerr = { # using the drop-and-recover psf fitting err method
+        'f125w':0.126760,
+        'f127m':0.102688,
+        'f139m':0.132692,
+        'f140w':0.043144,
+        'f153m':0.170073,
+        'f160w':0.117535,
+        }
+
+BUSH = supernova('bush')
+BUSH.mjdpk = 55797.
+BUSH.mjdmedband = 55803.
+BUSH.z_range = [ 1.16, 2.36 ]
+BUSH.mag = { # from psf model based on the multi-epoch stack
+             'f125w':25.9464,
+             'f127m':25.9610,
+             'f139m':25.6361,
+             'f140w':26.2892,
+             'f153m':25.3578,
+             'f160w':25.9097,
+             }
+
+BUSH.mag = { # from aperture phot in 0.3" aperture
+             'f125w':25.9464,
+             'f127m':25.9610,
+             'f139m':25.6361,
+             'f140w':26.2892,
+             'f153m':25.3578,
+             'f160w':25.9097,
+             }
+
+BUSH.magerr = { # from drop method
+         'f125w':0.106712,
+         'f127m':0.184979,
+         'f139m':0.214549,
+         'f140w':0.1162	 ,
+         'f153m':0.160024,
+         'f160w':0.138843,
+         }
+
+BUSH.mag = { # from aperture photometry
+             'f127m':25.788,
+             'f125w':25.944,
+             'f139m':25.563,
+             'f140w':26.289,
+             'f153m':25.574,
+             'f160w':25.804,
+             }
+BUSH.magerr = { # from aperture photometry
+                'f127m':0.173,
+                'f125w':0.099,
+                'f139m':0.159,
+                'f140w':0.116,
+                'f153m':0.169,
+                'f160w':0.113,
+                }
+
+def medband_matching_filter( medband ):
+    if medband=='f127m': return('f125w')
+    if medband=='f139m': return('f140w')
+    if medband=='f153m': return('f160w')
+
+
+
+def sncosmo_sim( snroot='demo',
+                 z_range=[1.8,2.2], t0_range=[-3,3],
+                 nsim=1000,
+                 verbose=True, clobber=False ):
+    """  Construct a color-color circle figure for SN Colfax, with observed
+     photometry included.
+
+    :param simIa:
+    :param simCC:
+    :param simIapkl:
+    :param simIIpkl:
+    :param z_range:
+    :param nsim:
+    :param verbose:
+    :param clobber:
+    :return:
+    """
+    import medband_classtest
+    import os
+    import cPickle
+
+    simIapkl='%s_SncosmoSim_Ia.pkl'%snroot
+    simIIpkl='%s_SncosmoSim_II.pkl'%snroot
+    simIbcpkl='%s_SncosmoSim_Ibc.pkl'%snroot
+
+    if os.path.isfile( simIapkl ) and not clobber>1 :
+        if verbose: print("Loading Ia simulation from pickle : %s"%simIapkl)
+        fin = open( simIapkl, 'rb' )
+        simIa = cPickle.load( fin )
+        fin.close()
+    else :
+        if verbose: print("Running a new Ia simulation, then saving to pickle : %s"%simIapkl)
+        simIa = medband_classtest.SncosmoSim( 'Ia' , z_range=z_range, t0_range=t0_range, nsim=nsim )
+        fout = open( simIapkl, 'wb' )
+        cPickle.dump( simIa, fout, protocol=-1 )
+        fout.close()
+
+    if os.path.isfile( simIIpkl ) and not clobber>1 :
+        if verbose: print("Loading II simulation from pickle : %s"%simIIpkl)
+        fin = open( simIIpkl, 'rb' )
+        simII = cPickle.load(fin)
+        fin.close()
+    else :
+        if verbose: print("Running a new II simulation, then saving to pickle : %s"%simIIpkl)
+        simII = medband_classtest.SncosmoSim( 'II' , z_range=z_range, t0_range=t0_range, nsim=nsim )
+        fout = open( simIIpkl, 'wb' )
+        cPickle.dump( simII, fout, protocol=-1 )
+        fout.close()
+
+    if os.path.isfile( simIbcpkl ) and not clobber>1 :
+        if verbose: print("Loading Ibc simulation from pickle : %s"%simIbcpkl)
+        fin = open( simIbcpkl, 'rb' )
+        simIbc = cPickle.load(fin)
+        fin.close()
+    else :
+        if verbose: print("Running a new Ibc simulation, then saving to pickle : %s"%simIbcpkl)
+        simIbc = medband_classtest.SncosmoSim( 'Ibc' , z_range=z_range, t0_range=t0_range, nsim=nsim )
+        fout = open( simIbcpkl, 'wb' )
+        cPickle.dump( simIbc, fout, protocol=-1 )
+        fout.close()
+
+
+    return( simIa, simII, simIbc )
+
+
+
+def _plot_colorcolor_singlesim( snsim, medbandx, medbandy,
+                            plotstyle='points', nbins=None, **plotargs ):
+    """ plot the med band pseudo-colors in a color-color diagram
+    :param snsim:
+    :return:
+    """
+    import numpy as np
+    from matplotlib import pyplot as pl
+    from matplotlib import ticker
+
+    widebandx = medband_matching_filter(medbandx)
+    widebandy = medband_matching_filter(medbandy)
+
+    mag = np.array([ -2.5*np.log10( snlc['flux'] ) + snlc['zp'] for snlc in snsim.lightcurves ])
+
+    flt = np.array( [snlc['band'] for snlc in snsim.lightcurves] )
+    imx = np.where( flt==medbandx)
+    imy = np.where( flt==medbandy )
+    iwx = np.where( flt==widebandx)
+    iwy = np.where( flt==widebandy)
+
+    ax = pl.gca()
+    if plotstyle=='points':
+        plotargfinal = {'marker':'o', 'alpha':0.3, 'color':'darkorange', 'ls':' '}
+        plotargfinal.update( **plotargs )
+        ax.plot( mag[imx]-mag[iwx], mag[imy]-mag[iwy], **plotargfinal )
+    elif plotstyle.startswith('contour') or plotstyle=='gradient':
+        xarray = mag[imy]-mag[iwy]
+        nsim = len(xarray)
+        if nbins is None : nbins = int( np.sqrt( nsim  ) )
+        plotargfinal = {'levels':[0.0,0.68,0.95],'colors':['r','g','b'],'ls':'-',
+                        'alpha':0.5, 'extend':'neither'}
+        plotargfinal.update( **plotargs )
+
+        # Plot filled contours, showing  the full extent of the population,
+        # and contour lines containing 68% of the population.
+        # First, bin the points into a 2-d histogram:
+        # (Note that we reverse the x-y order here to get the binned arrays
+        #  plotted in the correct direction )
+        count,y,x = np.histogram2d( mag[imy]-mag[iwy],mag[imx]-mag[iwx],
+                                    bins=nbins, range=[[-0.5,0.5],[-0.5,0.5]] )
+
+        # Renormalize relative to the sum of all SNe in this class :
+        count /= count.sum()
+
+        # Now set up an array 'cabove' such that  the cell value in cabove[i,j]
+        # is equal to the sum of all cells that have a value higher than c[i,j]
+        cabove = scumsum( count )
+
+        # solid lines give probability contours at specified levels
+        # (defaults to 0.68 for "1-sigma contours")
+        ax.contour( x[:-1], y[:-1], cabove, **plotargfinal )
+        if plotstyle=='contourf' :
+            ax.contourf( x[:-1], y[:-1], cabove, **plotargfinal )
+
+    ax.set_xlabel( '%s - %s'%( medbandx.upper(), widebandx.upper()))
+    ax.set_ylabel( '%s - %s'%( medbandy.upper(), widebandy.upper()))
+
+    ax.xaxis.set_major_locator( ticker.MultipleLocator( 0.1 ) )
+    ax.xaxis.set_minor_locator( ticker.MultipleLocator( 0.05 ) )
+    ax.yaxis.set_major_locator( ticker.MultipleLocator( 0.1 ) )
+    ax.yaxis.set_minor_locator( ticker.MultipleLocator( 0.05 ) )
+    return( ax )
+
+
+def plotcontours( sim1, sim2, sim3=None, medbandx='f127m', medbandy='f139m', nbins=None, **plotargs ):
+    """ Make a circle diagram, i.e. a med-wide band pseudo-color-color plot,
+    showing both Type Ia and CC simulations over the given redshift range.
+    :param snsim:
+    :return:
+    """
+    plotargs1 = { 'levels':[0.,0.68,0.95], 'colors':[_COLOR1], 'alpha':0.3 }
+    plotargs1.update( **plotargs )
+
+    plotargs2 = { 'levels':[0.,0.68,0.95], 'colors':[_COLOR2], 'alpha':0.3 }
+    plotargs2.update( **plotargs )
+
+    plotargs3 = { 'levels':[0.,0.68,0.95], 'colors':[_COLOR3], 'alpha':0.3 }
+    plotargs3.update( **plotargs )
+
+    ax = _plot_colorcolor_singlesim(sim1, medbandx, medbandy, nbins=nbins, plotstyle='contourf', **plotargs1 )
+    ax = _plot_colorcolor_singlesim(sim2, medbandx, medbandy, nbins=nbins, plotstyle='contourf', **plotargs2 )
+    if sim3 is not None :
+        ax = _plot_colorcolor_singlesim(sim3, medbandx, medbandy, nbins=nbins, plotstyle='contourf', **plotargs3 )
+    return( ax )
+
+def plotgradient( sim1, sim2, sim3=None, medbandx='f127m', medbandy='f139m', nbins=None, **plotargs ):
+    """ Make a circle diagram, i.e. a med-wide band pseudo-color-color plot,
+    showing both Type Ia and CC simulations over the given redshift range.
+    :param snsim:
+    :return:
+    """
+    plotargs1 = { 'levels':[0.,0.68,0.95], 'colors':[_COLOR1], 'alpha':0.3 }
+    plotargs1.update( **plotargs )
+
+    plotargs2 = { 'levels':[0.,0.68,0.95], 'colors':[_COLOR2], 'alpha':0.3 }
+    plotargs2.update( **plotargs )
+
+    plotargs3 = { 'levels':[0.,0.68,0.95], 'colors':[_COLOR3], 'alpha':0.3 }
+    plotargs3.update( **plotargs )
+
+    ax = _plot_colorcolor_singlesim(sim1, medbandx, medbandy, nbins=nbins, plotstyle='gradient', **plotargs1 )
+    ax = _plot_colorcolor_singlesim(sim2, medbandx, medbandy, nbins=nbins, plotstyle='gradient', **plotargs2 )
+    if sim3 is not None :
+        ax = _plot_colorcolor_singlesim(sim3, medbandx, medbandy, nbins=nbins, plotstyle='gradient', **plotargs3 )
+    return( ax )
+
+
+
+def plotpoints( sim1, sim2, sim3=None, medbandx='f127m', medbandy='f139m', **plotargs ):
+    """ Make a circle diagram, i.e. a med-wide band pseudo-color-color plot,
+    showing both Type Ia and CC simulations over the given redshift range.
+    :param snsim:
+    :return:
+    """
+    ax = _plot_colorcolor_singlesim(sim2, medbandx, medbandy, plotstyle='points', marker='o', ls=' ', color=_COLOR2, **plotargs )
+    if sim3 is not None :
+        ax = _plot_colorcolor_singlesim(sim3, medbandx, medbandy, plotstyle='points', marker='o', ls=' ', color=_COLOR3, **plotargs )
+    ax = _plot_colorcolor_singlesim(sim1, medbandx, medbandy, plotstyle='points', marker='o', ls=' ', color=_COLOR1, **plotargs )
+
+    return( ax )
+
+
+
+def plot_redshift_circle(z_range=[1.8,2.2], t0=0,
+                         medbandx='f139m', medbandy='f127m',
+                         source='salt2', coloredaxislabels=True, **plotargs ):
+    """  plot a color-color circle showing how the position of a SNIa in
+    color-color space changes with redshift, using markers color-coded by z.
+    :param z_range:
+    :param t0:
+    :param medbandx:
+    :param medbandy:
+    :param source:
+    :param coloredaxislabels:
+    :param plotargs:
+    :return:
+    """
+    from mpltools import color
+    from matplotlib import cm
+
+    zsteps = np.arange( z_range[0], z_range[1], 0.01 )
+    color.cycle_cmap( length=len(zsteps), cmap=cm.jet )
+    for z in zsteps :
+        sn = sncosmo.Model( source=source )
+        sn.set( z=z, t0=t0 )
+        medmags = {
+            'f127m':sn.bandmag('f127m', 'ab', t0),
+            'f139m':sn.bandmag('f139m', 'ab', t0),
+            'f153m':sn.bandmag('f153m', 'ab', t0), }
+        widemags = {
+            'f125w':sn.bandmag('f125w', 'ab', t0),
+            'f140w':sn.bandmag('f140w', 'ab', t0),
+            'f160w':sn.bandmag('f160w', 'ab', t0), }
+        widebandx = medband_matching_filter(medbandx)
+        widebandy = medband_matching_filter(medbandy)
+
+        colorx = medmags[medbandx]-widemags[widebandx]
+        colory = medmags[medbandy]-widemags[widebandy]
+        pl.plot( colorx, colory, **plotargs )
+
+
+    ax = pl.gca()
+    ax.set_xlabel( '%s - %s'%( medbandx.upper(), widebandx.upper()))
+    ax.set_ylabel( '%s - %s'%( medbandy.upper(), widebandy.upper()))
+    return( ax )
+
+def singlecircle( sn=None, sim1=None, sim2=None, sim3=None,
+                  medbandx='f139m', medbandy='f153m',
+                  contours=True, redshiftcircle=True,
+                  clobber=False, **plotargs ) :
+    """  make a single color-color circle diagram from sncosmo monte carlo sims.
+    :param sn:
+    :param sim1:
+    :param sim2:
+    :param contours:
+    :param dotlines:
+    :param clobber:
+    :return:
+    """
+    import numpy as np
+    from matplotlib import pyplot as pl
+
+    if sn == 'stone' :
+        sndat = STONE
+    elif sn == 'colfax' :
+        sndat = COLFAX
+    elif sn == 'bush' :
+        sndat = BUSH
+    elif sn == 'demo' or sn=='none' or sn is None :
+        sndat = DEMO
+
+    if sim1 is None :
+        sim1, sim2, sim3 = sncosmo_sim( snroot = sndat.name,
+                                        z_range= sndat.z_range,
+                                        t0_range=sndat.t0_range,
+                                        clobber=clobber )
+
+    if contours :
+        plotcontours( sim1, sim2, sim3, medbandx=medbandx, medbandy=medbandy, **plotargs )
+    else :
+        plotpoints( sim1, sim2, sim3, medbandx=medbandx, medbandy=medbandy, **plotargs )
+
+    if redshiftcircle :
+        plot_redshift_circle(z_range=sndat.z_range, t0=sndat.t0,
+                             medbandx=medbandx, medbandy=medbandy,
+                             marker='o' )
+
+    widebandx = medband_matching_filter(medbandx)
+    widebandy = medband_matching_filter(medbandy)
+
+    if sndat.name not in ['demo','none']:
+        snmag= sndat.mag
+        snmagerr = sndat.magerr
+        deltasnmagx = snmag[medbandx] - snmag[widebandx]
+        deltasnmagy = snmag[medbandy] - snmag[widebandy]
+
+        deltasnmagerrx = np.sqrt(snmagerr[medbandx]**2+snmagerr[widebandx]**2)
+        deltasnmagerry = np.sqrt(snmagerr[medbandy]**2+snmagerr[widebandy]**2)
+
+        ax = pl.gca()
+        ax.errorbar( deltasnmagx, deltasnmagy,
+                     deltasnmagerrx, deltasnmagerry,
+                     marker='D', ms=10, elinewidth=2, capsize=0,
+                     color='darkorange' )
+
+    pl.draw()
+    if sim3 is not None :
+        return sim1, sim2, sim3
+    return sim1,sim2
+
+
+
+def doublecircle( sn='stone', sim1=None, sim2=None, sim3=None,
+                  contours=True, redshiftcircle=True, clobber=False,
+                  **plotargs ):
+    """  Two circle diagrams in side-by-side plots
+    :param sn:
+    :param sim1:
+    :param sim2:
+    :param contours:
+    :param redshiftcircle:
+    :param clobber:
+    :param plotargs:
+    :return:
+    """
+    from matplotlib import pyplot as pl
+    fig = pl.gcf()
+    fig.clf()
+    ax1 = pl.subplot( 1, 2, 1 )
+    simlist  = singlecircle( sn=sn, sim1=sim1, sim2=sim2, sim3=sim3,
+                             medbandx='f139m', medbandy='f127m',
+                             contours=contours, redshiftcircle=redshiftcircle,
+                             clobber=clobber, **plotargs )
+    sim1,sim2,sim3 = simlist
+
+    ax2 = pl.subplot( 1, 2, 2, sharex=ax1 )
+    singlecircle( sn=sn, sim1=sim1, sim2=sim2, sim3=sim3,
+                  medbandx='f139m', medbandy='f153m',
+                  contours=contours, redshiftcircle=redshiftcircle,
+                  clobber=clobber, **plotargs )
+    ax2.yaxis.set_ticks_position('right')
+    ax2.yaxis.set_ticks_position('both')
+    ax2.yaxis.set_label_position('right')
+
+    return sim1, sim2, sim3
+
+
+def stonefig( simIa=None, simCC=None, contours=True, redshiftcircle=True,
+              clobber=False, **plotargs ):
+    from pytools import plotsetup
+    fig = plotsetup.halfpaperfig(3,[4,4])
+
+    simIa, simCC = singlecircle( 'stone', simIa, simCC, clobber=clobber,
+                                 medbandx='f139m', medbandy='f153m',
+                                 contours=contours, redshiftcircle=redshiftcircle,
+                                 **plotargs )
+    fig = pl.gcf()
+    ax = pl.gca()
+    fig.subplots_adjust( left=0.18, bottom=0.12, right=0.95, top=0.95, wspace=0.1 )
+
+    ax.set_xlim( -0.35, 0.35 )
+    ax.set_ylim( -0.3, 0.55 )
+
+    ax.text(  0.95, 0.95, 'GND13Sto' , transform=ax.transAxes,
+               ha='right',va='top', color='darkorange',fontsize=15,)
+
+    pl.draw()
+    return simIa, simCC
+
+
+def colfaxfig( simIa=None, simCC=None, contours=True, redshiftcircle=True,
+               clobber=False, **plotargs ):
+    from pytools import plotsetup
+    from matplotlib import pyplot as pl
+    fig = plotsetup.fullpaperfig(2,[8,4])
+
+    simIa, simCC = doublecircle( 'colfax', simIa, simCC, clobber=clobber,
+                                 contours=contours, redshiftcircle=redshiftcircle,
+                                 **plotargs )
+    fig = pl.gcf()
+    ax1 = fig.add_subplot(1,2,1)
+    ax2 = fig.add_subplot(1,2,2,sharex=ax1)
+    fig.subplots_adjust( left=0.18, bottom=0.12, right=0.88, top=0.95, wspace=0.1 )
+
+    ax1.set_xlim( -0.5, 0.4 )
+    ax1.set_ylim( -0.6, 0.3 )
+    ax2.set_ylim( -0.4, 0.4 )
+
+    ax2.text(  0.95, 0.95, 'GND12Col' , transform=ax2.transAxes,
+               ha='right',va='top', color='darkorange',fontsize=15,)
+    pl.draw()
+
+    return simIa, simCC
+
+def bushfig( simIa=None, simCC=None, contours=True, redshiftcircle=True,
+             clobber=False, **plotargs ):
+    from pytools import plotsetup
+    from matplotlib import pyplot as pl
+
+    #fig = plotsetup.fullpaperfig(1,[8,4])
+
+    simIa, simCC = doublecircle( 'bush', simIa, simCC, clobber=clobber,
+                                 contours=contours, redshiftcircle=redshiftcircle,
+                                 **plotargs )
+    fig = pl.gcf()
+    ax1 = fig.add_subplot(1,2,1)
+    ax2 = fig.add_subplot(1,2,2,sharex=ax1)
+    fig.subplots_adjust( left=0.18, bottom=0.12, right=0.88, top=0.95, wspace=0.1 )
+
+    ax1.set_xlim( -0.95, 0.5 )
+    ax1.set_ylim( -0.6, 0.3 )
+    ax2.set_ylim( -0.9, 0.4 )
+
+    #ax.text( 0.1, 0.1, 'SN Ia', color=color1,
+    #          ha='left',va='top')#,transform=ax1.transAxes,fontsize=14)
+    #ax.text( 0., -0.05, 'CC SN', color=color2,
+    #          ha='center',va='top')#,transform=ax1.transAxes,fontsize=14)
+    ax2.text(  0.95, 0.95, 'GND12Bus' , transform=ax2.transAxes,
+               ha='right',va='top', color='darkorange',fontsize=15,)
+    pl.draw()
+
+    return simIa, simCC
+
+
+def classdemofig( sim1=None, sim2=None, sim3=None,
+                  contours=True,
+                  clobber=False, **plotargs ):
+    """  Make a circle figure demonstrating the segregation of SN types
+    in pseudo-color space for classification.
+
+    :param sim1:
+    :param sim2:
+    :param sim3:
+    :param contours:
+    :param clobber:
+    :param plotargs:
+    :return:
+    """
+    from pytools import plotsetup
+    fig = plotsetup.fullpaperfig( figsize=[8,4] )
+
+    sim1, sim2, sim3  = doublecircle( None, sim1, sim2, sim3, clobber=clobber,
+                                      contours=contours, redshiftcircle=False,
+                                      **plotargs )
+    ax1 = fig.add_subplot( 1, 2, 1 )
+    ax2 = fig.add_subplot( 1, 2, 2, sharex=ax1 )
+    if contours :
+        ax1.text( -0.25, -0.3, 'SN Ia', color=_COLOR1, ha='right',va='top', fontsize=14)
+        ax1.text( 0.0, -0.08, 'SN II', color=_COLOR2, ha='center',va='center')
+        ax1.text( -0.2, 0.25, 'SN Ib/c', color=_COLOR3, ha='right',va='top')
+    else :
+        ax1.text( -0.25, -0.3, 'SN Ia', color=_COLOR1, ha='right',va='top', fontsize=14)
+        ax1.text( -0.25, -0.08, 'SN II', color=_COLOR2, ha='right',va='center')
+        ax1.text( -0.25, 0.25, 'SN Ib/c', color=_COLOR3, ha='right',va='top')
+
+    fig.subplots_adjust( left=0.12, bottom=0.14, right=0.88, top=0.95, wspace=0.1 )
+
+    ax1.set_xlim( -0.45, 0.4 )
+    ax1.set_ylim( -0.45, 0.3 )
+    ax2.set_ylim( -0.25, 0.3 )
+
+
+    return( sim1, sim2, sim3 )
+
+

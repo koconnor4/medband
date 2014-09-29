@@ -135,13 +135,13 @@ def mksedplot( z=1.8, color='k' ):
 
 
 
-def mkcircleline(zrange=[1.8,2.2], colorselect=[0,1],
+def mkcircleline(zrange=[1.8,2.2], t0=0, colorselect=[0,1],
                  source='hsiao', **plotargs ):
     f127m, f139m, f153m = [], [], []
     f125w, f140w, f160w = [], [], []
     for z in np.arange( zrange[0], zrange[1], 0.01 ) :
         sn = sncosmo.Model( source=source )
-        sn.set( z=z, t0=0 )
+        sn.set( z=z, t0=t0 )
         f127m.append( sn.bandmag('wfc3f127m', 'ab', 0.) )
         f139m.append( sn.bandmag('wfc3f139m', 'ab', 0.) )
         f153m.append( sn.bandmag('wfc3f153m', 'ab', 0.) )
@@ -158,34 +158,7 @@ def mkcircleline(zrange=[1.8,2.2], colorselect=[0,1],
     ax.set_xlabel(colorlabel[colorselect[0]])
     ax.set_ylabel(colorlabel[colorselect[1]])
 
-def mkcirclepoints(zrange=[1.8,2.2], colorselect=[0,1],
-                   source='hsiao', **plotargs ):
-    from mpltools import color
-    from matplotlib import cm
 
-    labelcolors = ['darkmagenta','teal','darkorange']
-
-    zsteps = np.arange( zrange[0], zrange[1], 0.01 )
-    color.cycle_cmap( length=len(zsteps), cmap=cm.jet )
-
-    for z in zsteps :
-        sn = sncosmo.Model( source=source )
-        sn.set( z=z, t0=0 )
-        f127m = sn.bandmag('wfc3f127m', 'ab', 0.)
-        f139m = sn.bandmag('wfc3f139m', 'ab', 0.)
-        f153m = sn.bandmag('wfc3f153m', 'ab', 0.)
-        f125w = sn.bandmag('wfc3f125w', 'ab', 0.)
-        f140w = sn.bandmag('wfc3f140w', 'ab', 0.)
-        f160w = sn.bandmag('wfc3f160w', 'ab', 0.)
-        med = np.array([ f127m,f139m,f153m] )
-        broad = np.array([ f125w,f140w,f160w] )
-        color = med-broad
-        pl.plot( color[colorselect[0]], color[colorselect[1]], **plotargs )
-
-    colorlabel = ['F127M-F125W','F139M-F140W','F153M-F160W']
-    ax = pl.gca()
-    ax.set_xlabel(colorlabel[colorselect[0]], color=labelcolors[colorselect[0]])
-    ax.set_ylabel(colorlabel[colorselect[1]], color=labelcolors[colorselect[1]])
 
 
 def classifyDemo(zrange=[1.8,2.2] ):

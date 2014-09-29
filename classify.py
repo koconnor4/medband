@@ -1,202 +1,41 @@
 
 # Dictionary of sncosmo CCSN model names and their corresponding SN sub-type
-ccSubClassDict = {
-    'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.05':'Ib','ib.06':'Ib','ib.07':'Ib',
-    'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic','ic.04':'Ic','ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic',
-    'iip.01':'IIP','iip.02':'IIP','iip.03':'IIP','iip.04':'IIP','iip.05':'IIP','iip.06':'IIP','iip.07':'IIP','iip.08':'IIP','iip.09':'IIP','iip.10':'IIP',
-    'iip.11':'IIP','iip.12':'IIP','iip.13':'IIP','iip.14':'IIP','iip.15':'IIP','iip.16':'IIP','iip.17':'IIP','iip.18':'IIP','iip.19':'IIP','iip.20':'IIP',
-    'iip.21':'IIP','iip.22':'IIP','iip.23':'IIP','iip.24':'IIP',
-    'iin.01':'IIn','iin.02':'IIn',
-    }
-iaSubClassDict = {
-    # 'salt2':'Ia',
-    'salt2-extended':'Ia',
-    }
+SubClassDict = {
+           # For simulations containing only Type II sub-types
+           'ii':{
+           'iip.01':'IIP','iip.02':'IIP','iip.03':'IIP','iip.04':'IIP','iip.05':'IIP','iip.06':'IIP','iip.07':'IIP','iip.08':'IIP','iip.09':'IIP','iip.10':'IIP',
+           'iip.11':'IIP','iip.12':'IIP','iip.13':'IIP','iip.14':'IIP','iip.15':'IIP','iip.16':'IIP','iip.17':'IIP','iip.18':'IIP','iip.19':'IIP','iip.20':'IIP',
+           'iip.21':'IIP','iip.22':'IIP','iip.23':'IIP','iip.24':'IIP',
+           'iin.01':'IIn','iin.02':'IIn',
+           },
+           # For simulations containing only Type Ib/c sub-types
+           'ibc':{
+           'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.05':'Ib','ib.06':'Ib','ib.07':'Ib',
+           'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic','ic.04':'Ic','ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic',
+           },
+           # For simulations containing all CC SN sub-types
+           'cc':{
+           'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.05':'Ib','ib.06':'Ib','ib.07':'Ib',
+           'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic','ic.04':'Ic','ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic',
+           'iip.01':'IIP','iip.02':'IIP','iip.03':'IIP','iip.04':'IIP','iip.05':'IIP','iip.06':'IIP','iip.07':'IIP','iip.08':'IIP','iip.09':'IIP','iip.10':'IIP',
+           'iip.11':'IIP','iip.12':'IIP','iip.13':'IIP','iip.14':'IIP','iip.15':'IIP','iip.16':'IIP','iip.17':'IIP','iip.18':'IIP','iip.19':'IIP','iip.20':'IIP',
+           'iip.21':'IIP','iip.22':'IIP','iip.23':'IIP','iip.24':'IIP',
+           'iin.01':'IIn','iin.02':'IIn',
+           },
+           'ia': {'salt2':'Ia'},
+}
 
 # Probability that a CC SN belongs to any given CC sub-class (Ib,Ic,IIP,IIL,IIn)
 # from Li et al 2011a
-ccSubClassProbs = {'Ib':0.19/0.76*0.46,'Ic':0.19/0.76*0.54,
-                   'IIP':0.57/0.76*0.7,'IIn':0.57/0.76*0.3 }
-
-class SncosmoSim( object ):
-    """ A class for holding the results of sncosmo simulations,
-    including parameters, cosmology, and light curves.
-    """
-    def __init__(self, sntype, observations=None, z_range=[1.8,2.2],
-                 t0_range=[0,0], nsim=100, perfect=True,
-                 Om=0.3, H0=70 ):
-        """ Run a monte carlo sim using sncosmo to simulate <nsim> SNe
-        of the given <sntype> over the given <z_range>.
-
-        Simulates Type Ia SNe with the SALT2 model, and CC SNe with
-        the SNANA CC templates.
-
-        Set perfect=True for noiseless "observations" of the simulated SNe.
-        :return:
-        """
-        from astropy import cosmology
-        import sncosmo
-        from sncosmohst import hstbandpasses, ccsnmodels
-        from numpy.random import normal, uniform, choice
-        import numpy as np
-
-        self.sntype = sntype
-        self.z_range = z_range
-        self.nsim = nsim
-        self.perfect = perfect
-
-        if observations is None :
-            observations = mkobservationsTable( )
-        self.observations = observations
-
-        # Make a list of all the unique sncosmo source models available,
-        # and assign a relative probability that any given simulated SN of this
-        # type (CC or Ia) belongs to that subclass
-        if sntype.lower()=='cc' :
-            self.SourcenameSet = np.array( ccSubClassDict.keys() )
-            self.SubclassSet = np.array([ ccSubClassDict[source] for source in self.SourcenameSet ])
-            self.SubclassCount = np.array([ len(np.where(self.SubclassSet==subclass)[0])
-                                         for subclass in self.SubclassSet ], dtype=float)
-            self.SourceprobSet = np.array([ ccSubClassProbs[subclass]
-                                          for subclass in self.SubclassSet ]) / self.SubclassCount
-            self.SourceprobSet /= self.SourceprobSet.sum()
-        else :
-            # No sub-class divisions for SNIa
-            self.SourcenameSet = np.array(['salt2-extended'])
-            self.SubclassSet = np.array( ['Ia'] )
-            self.SourceprobSet = np.array( [1] )
-            self.SubclassCount = np.array( [1] )
-
-        # load the O'Donnell 1994 dust model
-        self.dust = sncosmo.OD94Dust()
-
-        # Define an sncosmo SN model for each available source
-        modelset = np.array([ sncosmo.Model(source=source, effects=[self.dust],
-                                    effect_names=['host'], effect_frames=['rest'])
-                                 for source in self.SourcenameSet ])
-        # Define a cosmology
-        # self.Om = Om
-        # self.H0 = H0
-        self.cosmo = cosmology.FlatLambdaCDM(Om0=Om, H0=H0)
-
-        # For each simulated SN, draw random Av from distributions
-        # as defined in Rodney et al 2014a :
-        #   For SN Ia :  P(Av) = exp(-Av/0.33)
-        #   For CC SN :  P(Av) = 4 * gauss(0.6) + exp(-Rv/1.7)
-        if sntype=='Ia':
-            tau,sigma,R0 = 0.33, 0, 0
-        else :
-            tau,sigma,R0 = 1.7, 0.6, 4
-        self.Av = mcsample( pAv, nsim, tau=tau, sigma=sigma, R0=R0 )
-
-        # For each simulated SN, draw a random Rv from a normal
-        # distribution centered on 3.1 with width 0.5
-        self.Rv = normal( 3.1, 0.5, nsim )
-        self.Rv = np.where( self.Rv>0, self.Rv, 0.01 )
-
-        # Convert Av and Rv to E(B-V) :
-        # Rv = Av/EBV ==> EBV = Av/Rv
-        self.EBV = self.Av / self.Rv
-
-        # TODO : draw the redshifts with a metropolis-hastings sampler to match
-        #  a distribution defined based on the expected SN rate
-
-        # Disabled : uniform redshift spacing
-        # zlist = np.linspace( z_range[0], z_range[1], nsim )
-
-        # Draw a random redshift from a uniform distribution
-        self.z = uniform( low=z_range[0], high=z_range[1], size=nsim )
-
-        lightcurvelist = []
-        peakabsmagRlist = []
-        modelparamlist = []
-        subclasslist = []
-        modelindexlist = []
-        sourcenamelist = []
-        t0list = []
-        if sntype=='Ia':
-            x0list = []
-            x1list = []
-            clist = []
-        else :
-            amplitudelist = []
-        for isim in range(self.nsim):
-            # Randomly draw an sncosmo model from the available list, according to
-            # the predefined probability list, setting the SN sub-class for this
-            # simulated SN
-            imodel = choice( np.arange(len(modelset)), replace=True, p=self.SourceprobSet )
-            model =  modelset[imodel]
-            subclass = self.SubclassSet[imodel]
-
-            z = self.z[isim]
-            EBV = self.EBV[isim]
-            Rv = self.Rv[isim]
-
-            # Set the peak absolute magnitude according to the observed
-            # luminosity functions, as defined in Table 3 of Graur:2014a;
-            # and set the host extinction according to the 'mid' dust model
-            # of Rodney:2014a.
-            if subclass == 'Ia' :
-                MR = normal( -19.37, 0.47 )
-            elif subclass == 'Ib' :
-                MR = normal( -17.90, 0.90 )
-            elif subclass == 'Ic' :
-                MR = normal( -18.30, 0.60 )
-            elif subclass == 'IIP' :
-                MR = normal( -16.56, 0.80 )
-            elif subclass == 'IIL' :
-                MR = normal( -17.66, 0.42 )
-            elif subclass == 'IIn' :
-                MR = normal( -18.25, 1.00 )
-            model.set(z=z)
-            model.set_source_peakabsmag( MR, 'bessellr', 'vega', cosmo=self.cosmo)
-
-            modelindexlist.append( imodel )
-            subclasslist.append( subclass )
-            peakabsmagRlist.append( MR )
-            sourcenamelist.append( self.SourcenameSet[imodel] )
-            if subclass =='Ia' :
-                x0 = model.get('x0')
-                # TODO : use bifurcated gaussians for more realistic x1,c dist'ns
-                x1 = normal(0., 1.)
-                c = normal(0., 0.1)
-                t0 = uniform( t0_range[0], t0_range[1] )
-                modelparams = {'z':z, 't0':t0, 'x0':x0, 'x1':x1, 'c':c, 'hostebv':EBV, 'hostr_v':Rv}
-                t0list.append( t0 )
-                x0list.append( x0 )
-                x1list.append( x1 )
-                clist.append( c )
-                t0list.append( t0 )
-            else :
-                amplitude = model.get('amplitude')
-                t0 = uniform( t0_range[0], t0_range[1] )
-                modelparams = {'z':z, 't0':t0, 'amplitude':amplitude, 'hostebv':EBV, 'hostr_v':Rv }
-                amplitudelist.append( amplitude )
-                t0list.append( t0 )
-            modelparamlist.append( modelparams )
-
-            # Generate one simulated SN:
-            snlc = sncosmo.realize_lcs(self.observations, model, [ modelparams ],
-                                       thresh=None, perfect=perfect )
-            lightcurvelist.append( snlc[0] )
-
-        self.lightcurves = lightcurvelist
-        self.t0 = np.array( t0list )
-        self.modelindex = np.array( modelindexlist )
-        self.sourcename = np.array( sourcenamelist )
-        self.subclass = np.array( subclasslist )
-        self.modelparam = np.array( modelparamlist )
-        self.peakabsmagR = np.array( peakabsmagRlist )
-
-        if sntype=='Ia':
-            self.x0 = np.array( x0list )
-            self.x1 = np.array( x1list )
-            self.c  = np.array( clist )
-        else :
-            self.amplitude = np.array( amplitudelist )
-
-        return
-
+ccSubClassProbs = {
+           # For simulations containing only Type II sub-types
+           'ii':{'IIP':0.7,'IIn':0.3 },
+           # For simulations containing only Type Ib/c sub-types
+           'ibc':{'Ib':0.46,'Ic':0.54},
+           # For simulations containing all CC sub-types together
+           'cc':{'Ib':0.19/0.76*0.46,'Ic':0.19/0.76*0.54,
+                 'IIP':0.57/0.76*0.7,'IIn':0.57/0.76*0.3 },
+           }
 
 
 
@@ -224,491 +63,6 @@ testsnCCdat = """
 
 testsnIa = ascii.read( testsnIadat )
 testsnCC = ascii.read( testsnCCdat )
-
-
-def testClassifySNR( nsim=1000, nclass=None, outfileroot='colorColorClassify',
-                     clobber=False, verbose=True ):
-    import cPickle
-    import os
-    import numpy as np
-    from copy import deepcopy
-    from numpy.random import normal
-    from time import asctime
-
-    if nclass is None :
-        nclass = nsim
-
-    outfileIa = outfileroot + '_Ia.dat'
-    outfileCC = outfileroot + '_CC.dat'
-    if os.path.isfile( outfileIa ) and not clobber :
-        print("%s exists. Use clobber to overwrite."%outfileIa)
-    if os.path.isfile( outfileCC ) and not clobber :
-        print("%s exists. Use clobber to overwrite."%outfileCC)
-
-    classSimIapkl = 'colorColorClassify.classSimIa.%i.pkl'%nsim
-    classSimCCpkl = 'colorColorClassify.classSimCC.%i.pkl'%nsim
-
-    if os.path.isfile( classSimIapkl ) and not clobber>1 :
-        if verbose: print("Loading Ia simulation from pickle : %s"%classSimIapkl)
-        fin = open( classSimIapkl, 'rb' )
-        classSimIa = cPickle.load( fin )
-        fin.close()
-    else :
-        if verbose: print("Running a new Ia simulation, then saving to pickle : %s"%classSimIapkl)
-        classSimIa = SncosmoSim( 'Ia' , nsim=nsim )
-        fout = open( classSimIapkl, 'wb' )
-        cPickle.dump( classSimIa, fout, protocol=-1 )
-        fout.close()
-
-    if os.path.isfile( classSimCCpkl ) and not clobber>1 :
-        if verbose: print("Loading CC simulation from pickle : %s"%classSimCCpkl)
-        fin = open( classSimCCpkl, 'rb' )
-        classSimCC = cPickle.load(fin)
-        fin.close()
-    else :
-        if verbose: print("Running a new CC simulation, then saving to pickle : %s"%classSimCCpkl)
-        classSimCC = SncosmoSim( 'CC' , nsim=nsim )
-        fout = open( classSimCCpkl, 'wb' )
-        cPickle.dump( classSimCC, fout, protocol=-1 )
-        fout.close()
-
-    if verbose: print("Writing classification output to %s and %s "%(outfileIa, outfileCC))
-
-    # erase any existing output files, and start a new version with a header line
-    foutIa = open( outfileIa, 'w')
-    print >> foutIa, '# %s'% asctime()
-    print >> foutIa, '# Med Band Classifier Validation Test output generated with %s'% __file__
-    print >> foutIa, '# Classification samples : %s  , %s '%(classSimIapkl,classSimCCpkl)
-    print >> foutIa, '# Classifying %i simulated Type Ia SN'%nclass
-    print >> foutIa, '# P(Ia|D)  S/N   z    t0   x0   x1   c  Av   Rv'
-    foutIa.close()
-
-    foutCC = open( outfileCC, 'w')
-    print >> foutCC, '# %s'% asctime()
-    print >> foutCC, '# Med Band Classifier Validation Test output generated with %s'% __file__
-    print >> foutCC, '# Classification samples : %s  , %s '%(classSimIapkl,classSimCCpkl)
-    print >> foutCC, '# Classifying %i simulated CC SN'%nclass
-    print >> foutCC, '# P(Ia|D)   S/N   model  z  amplitude  t0  Av   Rv'
-    foutCC.close()
-
-    for isn in range(nclass) :
-        if verbose: print("Classifying CCSN %i  and SNIa %i of  %i"%(isn, isn, nclass))
-        for SNR in [10,20,30]:
-
-            # -----------------------------------------------------------------
-            # Classify one SNIa test particle :
-            x1 = classSimIa.x1[isn]
-            c = classSimIa.c[isn]
-            dx1c = np.sqrt( (classSimIa.x1-x1)**2 + (classSimIa.c-c)**2 )
-            iNotThisx1c = np.where( dx1c>0.05 )[0]
-
-            # Fix the S/N ratio and add appropriate noise to the perfect flux
-            testlcIa = deepcopy( classSimIa.lightcurves[isn] )
-            testlcIa['fluxerr'] = testlcIa['flux'] / SNR
-            testlcIa['flux'] = normal( testlcIa['flux'], testlcIa['fluxerr'] )
-
-            # exclude from the classification set any simulated SN with (almost)
-            # the same x1 and c as our test particle
-            classSimIaLCsubset = [ classSimIa.lightcurves[inot] for inot in iNotThisx1c ]
-
-            # Run the classifier and append the result to the running output file.
-            testsnIapIa = colorColorClassify( testlcIa, classSimIaLCsubset, classSimCC.lightcurves,  )
-            foutIa = open( outfileIa, 'a')
-            print >> foutIa, '%4.2f  %i  %5.3f  %7.1f   %9.3e  %5.2f  %5.2f  %5.2f  %5.2f'%(
-                testsnIapIa, SNR, classSimIa.z[isn],  classSimIa.t0[isn],
-                classSimIa.x0[isn], classSimIa.x1[isn], classSimIa.c[isn],
-                classSimIa.Av[isn], classSimIa.Rv[isn] )
-            foutIa.close()
-
-            # -----------------------------------------------------------------
-            # Classify one CCSN, excluding from the classification set any
-            #  simulated SN using the same CC model
-            testlcCC = deepcopy( classSimCC.lightcurves[isn] )
-            testlcCC['fluxerr'] = testlcCC['flux'] / SNR
-            testlcCC['flux'] = normal( testlcCC['flux'], testlcCC['fluxerr'] )
-            sourcename = classSimCC.sourcename[isn]
-            iNotThisSource = np.where( classSimCC.sourcename != sourcename )[0]
-            classSimCCLCsubset = [ classSimCC.lightcurves[inot] for inot in iNotThisSource ]
-            testsnCCpIa = colorColorClassify( testlcCC, classSimIa.lightcurves, classSimCCLCsubset )
-
-            # Append the classification result to the running output file.
-            foutCC = open( outfileCC, 'a')
-            print >> foutCC, '%4.2f  %i  %9s  %5.3f  %9.3e  %7.1f  %5.2f  %5.2f'%(
-                testsnCCpIa, SNR, classSimCC.sourcename[isn], classSimCC.z[isn],
-                classSimCC.amplitude[isn], classSimCC.t0[isn],
-                classSimCC.Av[isn], classSimCC.Rv[isn] )
-            foutCC.close()
-    if verbose: print("Done classifying %i SN of each class."%(nclass))
-
-    return( outfileIa, outfileCC )
-
-def plotSNRtest01( datfileIa='colorColorClassify_Ia.dat',
-                   datfileCC='colorColorClassify_CC.dat' ) :
-    """  Plot the results of a classification validation test.
-    :return:
-    """
-    from matplotlib import pyplot as pl
-    from pytools import plotsetup
-    import numpy as np
-    from astropy.io import ascii
-
-    datIa = ascii.read( datfileIa, format='commented_header', header_start=-1, data_start=0)
-    datCC = ascii.read( datfileCC, format='commented_header', header_start=-1, data_start=0)
-
-    pIaIa = datIa['P(Ia|D)']
-    zIa = datIa['z']
-    SNRIa = datIa['S/N']
-
-    pIaCC = datCC['P(Ia|D)']
-    zCC = datCC['z']
-    SNRCC = datCC['S/N']
-
-    fig1 = plotsetup.fullpaperfig( 1, figsize=[8,3])
-    SNRlist = np.unique( SNRIa )
-    ncol = len(SNRlist)
-    icol=0
-    axlist = []
-    for SNR in SNRlist :
-        icol+=1
-        if icol == 1 :
-            ax1 = pl.subplot(1,ncol,icol)
-            ax = ax1
-        else :
-            ax = pl.subplot(1,ncol,icol,sharex=ax1, sharey=ax1)
-        axlist.append( ax )
-        out1 = ax.hist( pIaIa[np.where( SNRIa==SNR)[0]],
-                        bins=np.arange(0,1.01,0.05),
-                        color='darkmagenta', alpha=0.3 )
-        out2 = ax.hist( pIaCC[np.where( SNRCC==SNR)[0]],
-                        bins=np.arange(0,1.01,0.05),
-                        color='teal', alpha=0.3 )
-
-    ax1.set_xlim( 0.0, 1.05 )
-    ax1.set_xticks( [0.2,0.4,0.6,0.8,1.0])
-
-    ax1 = axlist[0]
-    imid = int(round(len(axlist)/2))
-    ax2 = axlist[imid]
-    ax3 = axlist[-1]
-    ax2.set_xlabel('P(Ia|D)')
-    ax1.set_ylabel('Number of Test SN')
-
-    pl.setp( ax2.get_yticklabels(),visible=False )
-    pl.setp( ax2.get_ylabel(),visible=False )
-    ax3.yaxis.set_ticks_position('right')
-    ax3.yaxis.set_ticks_position('both')
-    ax3.yaxis.set_label_position('right')
-    ax1.set_title('S/N=%i'%SNRlist[0],color='0.3')
-    ax2.set_title('S/N=%i'%SNRlist[imid],color='0.3')
-    ax3.set_title('S/N=%i'%SNRlist[-1],color='0.3')
-    ax3.text( 0.1,0.95,'CCSN\nTest\nSet',color='teal',ha='left',va='top',transform=ax3.transAxes)
-    ax3.text( 0.88,0.95,'SN Ia\nTest\nSet',color='darkmagenta',ha='right',va='top',transform=ax3.transAxes)
-    pl.subplots_adjust( wspace=0, hspace=0, left=0.09, bottom=0.18, right=0.92, top=0.9)
-    pl.draw()
-
-
-def plotSNRtest02( datfileIa='colorColorClassify_Ia.dat',
-                   datfileCC='colorColorClassify_CC.dat' ) :
-    """  Plot the results of a classification validation test.
-    :return:
-    """
-    from matplotlib import pyplot as pl
-    from pytools import plotsetup
-    import numpy as np
-    from astropy.io import ascii
-
-    datIa = ascii.read( datfileIa, format='commented_header', header_start=-1, data_start=0)
-    datCC = ascii.read( datfileCC, format='commented_header', header_start=-1, data_start=0)
-
-    pIaIa = datIa['P(Ia|D)']
-    zIa = datIa['z']
-    SNRIa = datIa['S/N']
-
-    pIaCC = datCC['P(Ia|D)']
-    zCC = datCC['z']
-    SNRCC = datCC['S/N']
-
-    fig2 = plotsetup.fullpaperfig( 2, figsize=[8,3])
-
-    def purity( nTrue, nFalse, W=3 ):
-        return( float(nTrue) / ( float(nTrue) + float(W*nFalse) ) )
-
-    def efficiency( nTrue, nTot ):
-        return( float(nTrue) / float(nTot) )
-
-    SNRlist = np.unique( SNRIa )
-    ncol = len(SNRlist)
-    icol=0
-    axlist = []
-    for SNR in SNRlist :
-        icol+=1
-        irow=-1
-        iSNRIa = np.where( SNRIa==SNR )[0]
-        iSNRCC = np.where( SNRCC==SNR )[0]
-        zIaSNR = zIa[iSNRIa]
-        zCCSNR = zCC[iSNRCC]
-        for threshold in [0.5,0.75] :
-            irow+=1
-            if icol == 1 :
-                ax1 = pl.subplot(2,ncol,icol+irow*ncol)
-                ax = ax1
-            else :
-                ax = pl.subplot(2,ncol,icol+irow*ncol,sharex=ax1, sharey=ax1)
-            axlist.append( ax )
-
-            nIaTrue = np.count_nonzero( pIaIa[iSNRIa] > threshold )
-            nIaFalse = np.count_nonzero( pIaCC[iSNRCC] > threshold )
-            nIaTot = len( iSNRIa )
-            ppIa = purity( nIaTrue, nIaFalse, W=3 )
-            pIa = purity( nIaTrue, nIaFalse, W=1 )
-            eIa = efficiency( nIaTrue, nIaTot )
-            print( 'SNR=%i, Thresh=%.2f, Purity = %.2f, Pseudo-Purity = %.2f'%(
-                SNR, threshold, pIa, ppIa ) )
-            zbinmin = np.arange(1.8,2.2,0.05)
-            ppIaz, pIaz, eIaz = [], [], []
-            zbinmid = []
-            for zmin in zbinmin :
-                zmax = zmin+0.05
-                izthisbinIa = np.where( (zIaSNR>=zmin) & (zIaSNR<zmax) )[0]
-                izthisbinCC = np.where( (zCCSNR>=zmin) & (zCCSNR<zmax) )[0]
-                if not len(izthisbinCC) : continue
-                if not len(izthisbinIa) : continue
-                nIaTrue = np.count_nonzero( pIaIa[iSNRIa][izthisbinIa]  > threshold )
-                nIaFalse = np.count_nonzero( pIaCC[iSNRCC][izthisbinCC] > threshold )
-                nIaTot = len(izthisbinIa)
-                if nIaTrue == 0 and nIaFalse==0 : continue
-                ppIaz.append( purity( nIaTrue, nIaFalse, W=3 ) )
-                pIaz.append( purity( nIaTrue, nIaFalse, W=1 ) )
-                eIaz.append( efficiency( nIaTrue, nIaTot ) )
-                zbinmid.append( zmin+0.025 )
-            ax.plot( zbinmid, ppIaz, color='darkorange', marker='d', ls='--', lw=1 )
-            ax.plot( zbinmid, pIaz, color='darkcyan', marker='o', ls='-', lw=1 )
-            ax.plot( zbinmid, eIaz, color='0.5', marker='^', ls=':', lw=1 )
-            ax.set_xlim( 1.75, 2.25 )
-            ax.set_ylim( -0.1, 1.1 )
-            if icol==2 :
-                pl.setp( ax.get_yticklabels(), visible=False )
-            if icol==3 :
-                ax.yaxis.set_ticks_position('right')
-                ax.yaxis.set_ticks_position('both')
-                ax.yaxis.set_label_position('right')
-            if irow==0 :
-                pl.setp( ax.get_xticklabels(), visible=False )
-                ax.set_title( 'S/N=%i'%SNR, fontsize=12, color='0.5' )
-            #if irow==1 and icol==2 :
-            #    ax.set_xlabel('Redshift')
-            #if icol==1 :
-            #    ax.set_ylabel('Ia Sample Purity')
-            if icol==2 :
-                ax.text( 0.5, 0.05, 'thresh=%0.2f'%(threshold), ha='center',va='bottom',
-                         transform=ax.transAxes, fontsize=12, color='0.5')
-
-            if irow==0 and icol==ncol :
-                ax.text( 0.85, 0.05, 'true\npurity', ha='center',va='bottom',color='darkcyan', fontsize=10, transform=ax.transAxes)
-                ax.text( 0.5, 0.05, 'pseudo\npurity', ha='center',va='bottom',color='darkorange', fontsize=10, transform=ax.transAxes)
-                ax.text( 0.05, 0.05, 'efficiency', ha='left',va='bottom',color='0.3', fontsize=10, transform=ax.transAxes)
-
-    # make a background axis frame for x and y axis labels
-    bgAxes = pl.axes([0.05, 0.1, 0.9, 0.85],frameon=False )
-    bgAxes.set_xticks([])
-    bgAxes.set_yticks([])
-    bgAxes.set_xlabel('Redshift')
-    bgAxes.set_ylabel('Ia Sample Purity')
-    pl.subplots_adjust( wspace=0, hspace=0, left=0.08, bottom=0.18, right=0.92, top=0.9)
-
-    pl.draw()
-
-
-def testClassify100():
-    simIalist = [ mcSim( 'Ia', nsim=100 ) for i in range(10) ]
-    simCClist = [ mcSim( 'Ia', nsim=100 ) for i in range(10) ]
-    pIaArrayLog = []
-    pIaArray = []
-    for i in range(10) :
-        simIa = simIalist[i]
-        for j in range(10) :
-            simCC = simCClist[j]
-            pIaArrayLog.append( colorColorClassifyLogLike( testsnIa, simIa, simCC ) )
-            pIaArray.append( colorColorClassify( testsnIa, simIa, simCC ) )
-    return( pIaArrayLog, pIaArray )
-
-def testClassify1000():
-    simIalist = [ mcSim( 'Ia', nsim=1000 ) for i in range(10) ]
-    simCClist = [ mcSim( 'CC', nsim=1000 ) for i in range(10) ]
-    pIaArray = []
-    for i in range(10) :
-        simIa = simIalist[i]
-        for j in range(10) :
-            simCC = simCClist[j]
-            pIaArray.append( colorColorClassify( testsnIa, simIa, simCC ) )
-    return( simIalist, simCClist, pIaArray )
-
-def colorColorClassifyLogLike( sn=testsnIa, simIa=None, simCC=None,
-                               z_range=[1.8,2.2], nsim=5 ):
-    """  Classify a SN with med-wide band colors by comparing
-    measured flux ratios against those from sncosmo sims.
-    :return:
-    """
-    import numpy as np
-
-    # run monte carlo simulations if needed
-    if simIa is None :
-        simIa = SncosmoSim( 'Ia', z_range=z_range, nsim=nsim, perfect=True )
-    if simCC is None :
-        simCC = SncosmoSim( 'CC', z_range=z_range, nsim=nsim, perfect=True )
-
-    # extract the flux ratios from the observed and simulated SN data
-    fRsn, dfRsn = [], []
-    fRsimIa, fRsimCC = [], []
-    for bandpair in [['f127m','f125w'],['f139m','f140w'],['f153m','f160w']]:
-        imed = np.where( sn['band']==bandpair[0])
-        iwide = np.where( sn['band']==bandpair[1])
-        fRatio = sn['flux'][imed] / sn['flux'][iwide]
-        fRsn.append( fRatio )
-        fRatioErr = np.sqrt(
-            (sn['fluxerr'][imed]/sn['flux'][imed])**2 + \
-            (sn['fluxerr'][iwide]/sn['flux'][iwide])**2 ) * np.abs( fRatio )
-        dfRsn.append( fRatioErr )
-
-        # Assuming all simulated SN have the same observations, as is the case
-        # when the sim is generated with the mcSim() function.
-        imedsim = np.where( simIa[0]['band']==bandpair[0] )
-        iwidesim = np.where( simIa[0]['band']==bandpair[1] )
-        fRatioSimIa = np.array( [ simIa[isim]['flux'][imedsim] / simIa[isim]['flux'][iwidesim]
-                            for isim in range(len(simIa))] )
-        fRsimIa.append( fRatioSimIa.T[0] )
-
-        fRatioSimCC = np.array( [ simCC[isim]['flux'][imedsim] / simCC[isim]['flux'][iwidesim]
-                            for isim in range(len(simCC))] )
-        fRsimCC.append( fRatioSimCC.T[0] )
-
-    fRsn = np.array( fRsn, dtype=float )
-    dfRsn = np.array( dfRsn, dtype=float )
-    fRsimIa = np.array( fRsimIa, dtype=float )
-    fRsimCC = np.array( fRsimCC, dtype=float )
-
-    def loglike( fRsn, fRsim, dfRsn ):
-        """  Returns the natural log likelihood matrix, derived
-        by comparing the observed flux ratios of the real SN (fRsn, dfRsn),
-        against the flux ratios of a simulated SN (fRsim).
-
-        :param fRsn: an N-dimensional array giving the ratios of medium to
-               wide band fluxes from an observed SN, for N med+wide
-               bandpass pairs.
-        :param fRsim: an NxM-dimensional array, giving the same N flux ratios
-               for each of M simulated SN.
-        :param dfRsn: an N-dimensional array giving observed flux ratio uncertainties
-        :return: M-dimensional array giving the log likelihood from comparing
-               the observed SN to each of the M simulated SN.
-        """
-        # likelihood = 1/sqrt(2*pi*sigma^2)  *  exp( -(fRsn-fRsim)^2/dfRsn^2 )
-        halfchi2 = 0.5 * (fRsn-fRsim)**2 / dfRsn**2  # 3x1k
-        lognormfactor = np.log( np.sqrt(2*np.pi) * dfRsn ) # 3x1
-        loglike =  -lognormfactor.sum(axis=0) - halfchi2.sum(axis=0) # 1k
-        return(  loglike )
-
-    loglikeIa = loglike( fRsn, fRsimIa, dfRsn )
-    loglikeCC = loglike( fRsn, fRsimCC, dfRsn )
-    likeIaSum = np.exp( loglikeIa ).sum()
-    likeCCSum = np.exp( loglikeCC ).sum()
-    pIaFromLog = likeIaSum / ( likeIaSum + likeCCSum )
-
-    return( pIaFromLog )
-
-
-def colorColorClassify( sn=testsnIa, simIa=None, simCC=None,
-                        z_range=[1.8,2.2], nsim=5 ):
-    """  Classify a SN with med-wide band colors by comparing
-    measured flux ratios against those from sncosmo sims.
-    :return:
-    """
-    import numpy as np
-
-    # run monte carlo simulations if needed
-    if simIa is None :
-        simIa = SncosmoSim( 'Ia', z_range=z_range, nsim=nsim, perfect=True )
-    if simCC is None :
-        simCC = SncosmoSim( 'CC', z_range=z_range, nsim=nsim, perfect=True )
-
-    # extract the flux ratios from the observed and simulated SN data
-    fRsn, dfRsn = [], []
-    fRsimIa, fRsimCC = [], []
-    for bandpair in [['f127m','f125w'],['f139m','f140w'],['f153m','f160w']]:
-        imed = np.where( sn['band']==bandpair[0])
-        iwide = np.where( sn['band']==bandpair[1])
-        fRatio = sn['flux'][imed] / sn['flux'][iwide]
-        fRsn.append( fRatio )
-        fRatioErr = np.sqrt(
-            (sn['fluxerr'][imed]/sn['flux'][imed])**2 + \
-            (sn['fluxerr'][iwide]/sn['flux'][iwide])**2 ) * np.abs( fRatio )
-        dfRsn.append( fRatioErr )
-
-        # Assuming all simulated SN have the same observations, as is the case
-        # when the sim is generated with the mcSim() function.
-        imedsim = np.where( simIa[0]['band']==bandpair[0] )
-        iwidesim = np.where( simIa[0]['band']==bandpair[1] )
-        fRatioSimIa = np.array( [ simIa[isim]['flux'][imedsim] / simIa[isim]['flux'][iwidesim]
-                            for isim in range(len(simIa))] )
-        fRsimIa.append( fRatioSimIa.T[0] )
-
-        fRatioSimCC = np.array( [ simCC[isim]['flux'][imedsim] / simCC[isim]['flux'][iwidesim]
-                            for isim in range(len(simCC))] )
-        fRsimCC.append( fRatioSimCC.T[0] )
-
-    fRsn = np.array( fRsn, dtype=float )
-    dfRsn = np.array( dfRsn, dtype=float )
-    fRsimIa = np.array( fRsimIa, dtype=float )
-    fRsimCC = np.array( fRsimCC, dtype=float )
-
-    def like( fRsn, fRsim, dfRsn ):
-        """  Returns the likelihood matrix, derived
-        by comparing the observed flux ratios of the real SN (fRsn, dfRsn),
-        against the flux ratios of a simulated SN (fRsim).
-
-        :param fRsn: an N-dimensional array giving the ratios of medium to
-               wide band fluxes from an observed SN, for N med+wide
-               bandpass pairs.
-        :param fRsim: an NxM-dimensional array, giving the same N flux ratios
-               for each of M simulated SN.
-        :param dfRsn: an N-dimensional array giving observed flux ratio uncertainties
-        :return: M-dimensional array giving the log likelihood from comparing
-               the observed SN to each of the M simulated SN.
-        """
-        # likelihood = 1/sqrt(2*pi*sigma^2)  *  exp( -(fRsn-fRsim)^2/dfRsn^2 )
-        halfchi2 = 0.5 * (fRsn-fRsim)**2 / dfRsn**2  # 3x1k
-        normfactor = 1./(np.sqrt(2*np.pi)*dfRsn) # 3x1
-        like =  np.prod( normfactor*np.exp(-halfchi2), axis=0) # 1k
-        return(  like.sum() )
-
-    likeIa = like( fRsn, fRsimIa, dfRsn )
-    likeCC = like( fRsn, fRsimCC, dfRsn )
-    pIa = likeIa / ( likeIa + likeCC )
-
-    return( pIa )
-
-def mkobservationsTable( orbits=10.  ):
-    from sncosmohst.simparam import gethstzp, gethstbgnoise
-    import numpy as np
-    from astropy.table import Table
-
-    # medium band at peak observation set :
-    bandlist = ['f127m','f139m','f153m','f125w','f140w','f160w']
-    if not np.iterable( orbits ) : orbits = np.ones(len(bandlist)) * orbits
-    exptimelist = orbits * 2500
-
-    timelist = np.zeros( len( bandlist ) )
-    zplist = [ gethstzp(band) for band in bandlist ]
-    zpsyslist = [ 'ab' for i in range(len(bandlist)) ]
-    # gainlist = [ gethstgain( et ) for et in exptimelist ]
-    gainlist = [ et for et in exptimelist ]
-    bgnoiselist = [ gethstbgnoise( band, et ) for band,et in zip(bandlist,exptimelist) ]
-    # bgnoiselist = np.zeros( len(bandlist) )
-    observations = Table({'band': bandlist, 'time': timelist, 'zp': zplist,
-                          'zpsys': zpsyslist, 'gain': gainlist, 'exptime':exptimelist,
-                          'skynoise': bgnoiselist,
-                          })
-    return( observations )
-
 
 
 def mcsample( p, Ndraws, x0=None, mcsigma=0.05,
@@ -761,34 +115,6 @@ def mcsample( p, Ndraws, x0=None, mcsigma=0.05,
 
 
 
-# TODO : This is not yet working with emcee.  I've fallen back to using my
-#  own metropolis hastings sampler instead.
-def mkAvSampler(type='Ia'):
-    """ Define a monte carlo sampler to draw Av values from a host galaxy
-    Extinction distribution as defined in Rodney:2014a.
-    :param type:
-    :return:
-    """
-    import numpy as np
-    import emcee
-
-    if type=='Ia' :
-        # For SN Ia :
-        # P(Av) = exp(-Av/0.33)
-        tau = 0.33
-        sigma=0
-        R0=0
-    else :
-        # For CC SN :
-        # P(Av) = 4 * gauss(0.6) + exp(-Rv/1.7)
-        tau = 1.7
-        sigma=0.6
-        R0 = 4
-    def lnprobfn(Av):
-        return( np.log(pAv(Av,sigma,tau,R0) ))
-    return( emcee.Sampler( 1, lnprobfn, args=[], kwargs={}) )
-
-
 def pAv( Av, sigma=0, tau=0, R0=0, noNegativeAv=True ):
     """  Dust models:   P(Av)
     :param Av:
@@ -827,257 +153,289 @@ def pAv( Av, sigma=0, tau=0, R0=0, noNegativeAv=True ):
     elif tau==0 : return( coreOut )
     else : return( R0 * coreOut + tailOut )
 
+def gauss( x, mu, sigma, range=None):
+    """ Return values from a (bifurcated) gaussian.
+    If sigma is a scalar, then this function returns a  symmetric
+    normal distribution.
+
+    If sigma is a 2-element iterable, then we define a bifurcated
+    gaussian (i.e. two gaussians with different widths that meet with a
+    common y value at x=mu)
+    In this case, sigma must contain a positive value
+    giving sigma for the right half gaussian, and a negative value giving
+    sigma for the left half gaussian.
+
+    If range is specified, then we include a normalization factor to
+    ensure that the function integrates to unity over the given interval.
+    """
+    import numpy as np
+    from scipy.special import erf
+
+    if np.iterable( sigma ) :
+        assert np.sign(sigma[0])!=np.sign(sigma[1]), \
+            "sigma must be [+sigmaR,-sigmaL] or [-sigmaL,+sigmaR] :  " \
+            "i.e. components must have opposite signs"
+        sigmaL = - np.min( sigma )
+        sigmaR = np.max( sigma )
+    else :
+        sigmaL = sigmaR = sigma
+
+    if range is not None :
+        normfactor = 2. / ( np.abs( erf( (range[0]-mu)/(np.sqrt(2)*sigmaL) ) ) + \
+                            np.abs( erf( (range[1]-mu)/(np.sqrt(2)*sigmaR) ) ) )
+    else :
+        normfactor = 1.
+
+    if np.iterable(x) and type(x) != np.ndarray :
+        x = np.asarray( x )
+
+    normaldist = lambda x,mu,sig : np.exp(-(x-mu)**2/(2*sig**2))/(np.sqrt(2*np.pi)*sig)
+    gaussL = normfactor * 2*sigmaL/(sigmaL+sigmaR) * normaldist( x, mu, sigmaL )
+    gaussR = normfactor * 2*sigmaR/(sigmaL+sigmaR) * normaldist( x, mu, sigmaR )
+
+    if not np.iterable( x ) :
+        if x <= mu :
+            return( gaussL )
+        else :
+            return( gaussR )
+    else :
+        return( np.where( x<=mu, gaussL, gaussR ) )
 
 
 
-def plotColorz( snsimset ):
-    """ plot the med band pseudo-colors vs z
-    :param snsimset:
+def get_evidence( sn=testsnIa, model='salt2',
+                 zphot=1.9, zphoterr=0.05, t0_range=None,
+                 zminmax=[0.1,2.8], nobj=100, maxiter=1000, verbose=True ):
+    """  compute the Bayesian evidence (and likelihood distributions)
+    for the given SN class using the sncosmo nested sampling algorithm.
     :return:
     """
     import numpy as np
-    from matplotlib import pyplot as pl
+    import sncosmo
+    import time
+    runtime0 = time.time()
 
-    z = np.array([ sn.meta['z'] for sn in snsimset ])
-    mag = np.array([ -2.5*np.log10( sn['flux'] ) + sn['zp'] for sn in snsimset ])
-    # magerr = np.array( [2.5 * np.log10(np.e) *  sn['fluxerr']/ sn['flux'] for sn in sne])
+    # standardize the data column names and normalize to zpt=25 AB
+    sn = sncosmo.fitting.standardize_data( sn )
+    sn = sncosmo.fitting.normalize_data( sn )
 
-    flt = np.array( [sn['band'] for sn in snsimset] )
-
-    i127 = np.where( flt=='wfc3f127m' )
-    i139 = np.where( flt=='wfc3f139m' )
-    i153 = np.where( flt=='wfc3f153m' )
-    i125 = np.where( flt=='wfc3f125w' )
-    i140 = np.where( flt=='wfc3f140w' )
-    i160 = np.where( flt=='wfc3f160w' )
-
-    pl.clf()
-    pl.plot( z, mag[i127]-mag[i125], marker='o', alpha=0.3, color='darkmagenta', ls=' ' )
-    pl.plot( z, mag[i139]-mag[i140], marker='o', alpha=1, color='teal', ls=' ' )
-    pl.plot( z, mag[i153]-mag[i160], marker='o', alpha=0.3, color='darkorange', ls=' ' )
-    pl.draw()
+    if np.iterable( zphoterr ) :
+        assert np.sign(zphoterr[0])!=np.sign(zphoterr[1]), \
+            "zphoterr must be [+err,-err] or [-err,+err] :  " \
+            "i.e. components must have opposite signs"
+        zphotminus = - np.min( zphoterr )
+        zphotplus = np.max( zphoterr )
+    else :
+        zphotminus = zphotplus = zphoterr
+    zmin, zmax = zminmax
+    z_range = [ max( zmin, zphot-zphotminus*5), min(zmax,zphot+zphotplus*5) ]
 
 
-def plotMagz( snsimset, **plotargs ):
-    """ plot the broad-band mag vs z (hubble diagram)
-    :param snsimset:
-    :return:
+    # Define gaussian priors for z, x1, c
+    # For the redshift prior, renormalize
+
+    if t0_range is None :
+        t0_range = [sn['time'].min()-20,sn['time'].max()+20]
+    bounds={'z':(z_range[0],z_range[1]),'t0':(t0_range[0],t0_range[1]) }
+
+    def zprior( z ) :
+        return( gauss( z, zphot, [-zphotminus,zphotplus], range=bounds['z'] ) )
+
+    if model.lower().startswith('salt2') :
+        # define the Ia SALT2 model parameter bounds and priors
+        model = sncosmo.Model( source='salt2')
+        param_names = ['z','t0','x0','x1','c']
+        bounds['x1'] = (-5.,5.)
+        bounds['c'] = (-0.5,3.0)
+        def x1prior( x1 ) :
+            return( gauss( x1, 0, [-1.5,0.9], range=bounds['x1'] ) )
+        def cprior( c ) :
+            return( gauss( c, 0, [-0.08,0.14], range=bounds['c'] ) )
+        priorfn = {'z':zprior, 'x1':x1prior, 'c':cprior}
+
+    else :
+        # define a host-galaxy dust model
+        dust = sncosmo.CCM89Dust( )
+
+        # Define the CC model, parameter bounds and priors
+        model = sncosmo.Model( source=model, effects=[dust],
+                               effect_names=['host'], effect_frames=['rest'])
+
+        param_names = ['z','t0','amplitude','hostebv','hostr_v']
+        bounds['hostebv'] = (0.0,1.0)
+        bounds['hostr_v'] = (2.0,4.0)
+        def rvprior( rv ) :
+            return( gauss( rv, 3.1, 0.3, range=bounds['host_rv'] ) )
+        # TODO : include a proper Av or E(B-V) prior for CC models
+        priorfn = {'z':zprior, 'rv':rvprior }
+
+    model.set(z=zphot)
+
+    # first find the min chi2 parameter set
+    #runtime1 = time.time()
+    #minchi2res, minchi2mod = sncosmo.fit_lc( sn, salt2, param_names, bounds=bounds )
+
+    runtime2 = time.time()
+    #if verbose : print("chi2 minimization time = %.1f sec"%(runtime2-runtime1))
+
+
+    res, fit = sncosmo.fitting.nest_lc( sn, model, param_names, bounds,
+                                        guess_amplitude_bound=True,
+                                        priors=priorfn,
+                                        nobj=nobj, maxiter=maxiter,
+                                        verbose=verbose )
+    runtime3 = time.time()
+    if verbose : print("nested sampler time = %.1f sec"%(runtime3-runtime2))
+    if verbose : print("Total Fitting time = %.1f sec"%(runtime3-runtime0))
+
+    pdf  = get_marginal_pdfs( res )
+    return( sn, res, fit, pdf, priorfn )
+
+def get_marginal_pdfs( res, nbins=101, verbose=True ):
+    """ Given the results <res> from a nested sampling chain, determine the
+    marginalized posterior probability density functions for each of the
+    parameters in the model.
+
+    :param res:  the results of a nestlc run
+    :param nbins: number of bins (steps along the x axis) for sampling
+       each parameter's marginalized posterior probability
+    :return: a dict with an entry for each parameter, giving a 2-tuple containing
+       NDarrays of length nbins.  The first array in each pair gives the parameter
+       value that defines the left edge of each bin along the parameter axis.
+       The second array gives the posterior probability density integrated
+       across that bin.
     """
     import numpy as np
+    param_names = res.param_names
+    weights = res.weights
+    samples = res.samples
+    pdfdict = {}
+
+    for param in param_names :
+        ipar = param_names.index( param )
+        paramvals = samples[:,ipar]
+
+        if param in res.bounds :
+            parvalmin, parvalmax = res.bounds[param]
+        else :
+            parvalmin, parvalmax = 0.99*paramvals.min(), 1.01*paramvals.max()
+        parambins = np.linspace( parvalmin, parvalmax, nbins, endpoint=True )
+        binindices = np.digitize( paramvals, parambins )
+
+        # we estimate the marginalized pdf by summing the weights of all points in the bin,
+        # where the weight of each point is the prior volume at that point times the
+        # likelihood, divided by the total evidence
+        pdf = np.array( [ weights[np.where( binindices==ibin )].sum() for ibin in range(len(parambins)) ] )
+
+        mean = (weights  * samples[:,ipar]).sum()
+        std = np.sqrt( (weights * (samples[:,ipar]-mean)**2 ).sum() )
+
+        pdfdict[param] = (parambins,pdf,mean,std)
+
+        if verbose :
+            if np.abs(std)>=0.1:
+                print( '<%s> =  %.1f +- %.1f'%( param, np.round(mean,1), np.round(std,1))  )
+            elif np.abs(std)>=0.01:
+                print( '<%s> =  %.2f +- %.2f'%( param, np.round(mean,2), np.round(std,2)) )
+            elif np.abs(std)>=0.001:
+                print( '<%s> =  %.3f +- %.3f'%( param, np.round(mean,3), np.round(std,3)) )
+            else :
+                print( '<%s> = %.3e +- %.3e'%( param, mean, std) )
+
+    return( pdfdict )
+
+
+
+
+def plot_marginal_pdfs( res, nbins=101, **kwargs):
+    """ plot the results of a classification run
+    :return:
+    """
     from matplotlib import pyplot as pl
+    import numpy as np
 
+    nparam = len(res.param_names)
+    # nrow = np.sqrt( nparam )
+    # ncol = nparam / nrow + 1
+    nrow, ncol = 1, nparam
 
-    z = np.array([ sn.meta['z'] for sn in snsimset ])
+    pdfdict = get_marginal_pdfs( res, nbins )
 
-    # the magnitude if we had a zeropoint of 0
-    mag = np.array([ -2.5*np.log10( sn['flux'] ) + sn['zp'] for sn in snsimset ])
-    #magerr = np.array( [2.5 * np.log10(np.e) *  sn['fluxerr']/ sn['flux'] for sn in snsimset])
+    fig = pl.gcf()
+    for parname in res.param_names :
+        iax = res.param_names.index( parname )+1
+        ax = fig.add_subplot( nrow, ncol, iax )
 
-    flt = np.array( [sn['band'] for sn in snsimset] )
+        parval, pdf, mean, std = pdfdict[parname]
+        ax.plot(  parval, pdf, **kwargs )
+        if np.abs(std)>=0.1:
+            ax.text( 0.95, 0.95, '%s  %.1f +- %.1f'%( parname, np.round(mean,1), np.round(std,1)),
+                     ha='right',va='top',transform=ax.transAxes )
+        elif np.abs(std)>=0.01:
+            ax.text( 0.95, 0.95, '%s  %.2f +- %.2f'%( parname, np.round(mean,2), np.round(std,2)),
+                     ha='right',va='top',transform=ax.transAxes )
+        elif np.abs(std)>=0.001:
+            ax.text( 0.95, 0.95, '%s  %.3f +- %.3f'%( parname, np.round(mean,3), np.round(std,3)),
+                     ha='right',va='top',transform=ax.transAxes )
+        else :
+            ax.text( 0.95, 0.95, '%s  %.3e +- %.3e'%( parname, mean, std),
+                     ha='right',va='top',transform=ax.transAxes )
 
-    i127 = np.where( flt=='wfc3f127m' )
-    i139 = np.where( flt=='wfc3f139m' )
-    i153 = np.where( flt=='wfc3f153m' )
-    i125 = np.where( flt=='wfc3f125w' )
-    i140 = np.where( flt=='wfc3f140w' )
-    i160 = np.where( flt=='wfc3f160w' )
-
-
-    plotdefaults = {'marker':'o', 'alpha':0.3, 'color':'darkred', 'ls':' '}
-    plotdefaults.update( **plotargs )
-    # pl.clf()
-    #pl.plot( z, mag[i125], marker='o', alpha=0.3, color='darkmagenta', ls=' ' )
-    #pl.plot( z, mag[i140], marker='o', alpha=1, color='teal', ls=' ' )
-    #pl.errorbar( z, mag[i160], magerr[i160], marker='o', alpha=0.3, color='darkred', ls=' ' )
-    #mag160 = mag0[i160] + (zptTrue['wfc3f160w'])
-    pl.plot( z, mag[i160], **plotdefaults )
     pl.draw()
 
 
-def plotColorColorSN( sn ) :
-    """
-    Plot a single SN onto color-color diagrams.
+def classify( sn, zphot=1.9, zphoterr=0.05, t0_range=None,
+              zminmax=[0.1,2.8], nobj=100, maxiter=1000, verbose=True ):
+    """  Collect the bayesian evidence for all SN sub-classes.
     :param sn:
+    :param zphot:
+    :param zphoterr:
+    :param t0_range:
+    :param zminmax:
+    :param nobj:
+    :param maxiter:
+    :param verbose:
     :return:
     """
     import numpy as np
-    from matplotlib import pyplot as pl
 
-    # TODO : pick out the med-wide pairs observed at the same time.
+    iimodelnames = SubClassDict['ii'].keys()[:1]
+    ibcmodelnames = SubClassDict['ibc'].keys()[:1]
+    iamodelnames = SubClassDict['ia'].keys()[:1]
 
-    mag = -2.5*np.log10( sn['flux'] ) + sn['zp']
-    dmag = 2.5*np.log10(np.e) * sn['fluxerr'] / sn['flux']
+    outdict = {}
+    allmodelnames = np.append( np.append( iamodelnames, iimodelnames), ibcmodelnames )
 
-    i127 = np.where( sn['band'] == 'f127m' )[0]
-    i125 = np.where( sn['band'] == 'f125w' )[0]
-    i139 = np.where( sn['band'] == 'f139m' )[0]
-    i140 = np.where( sn['band'] == 'f140w' )[0]
-    i153 = np.where( sn['band'] == 'f153m' )[0]
-    i160 = np.where( sn['band'] == 'f160w' )[0]
+    logz = { 'Ia':[], 'II':[], 'Ibc':[] }
+    for model in allmodelnames :
+        sn, res, fit, pdf, priorfn = get_evidence(
+            sn, model=model, zphot=zphot, zphoterr=zphoterr,
+            t0_range=t0_range, zminmax=zminmax,
+            nobj=nobj, maxiter=maxiter, verbose=verbose )
 
-    c127 = mag[i127]-mag[i125]
-    c139 = mag[i139]-mag[i140]
-    c153 = mag[i153]-mag[i160]
+        outdict[model] = {'sn':sn, 'res':res, 'fit':fit, 'pdf':pdf, 'priorfn':priorfn }
+        if model in SubClassDict['ii'].keys() :
+            logz['II'].append( res.logz )
+        elif model in SubClassDict['ibc'].keys() :
+            logz['Ibc'].append( res.logz )
+        elif model in SubClassDict['ia'].keys() :
+            logz['Ia'].append( res.logz )
 
-    dc127 = np.sqrt( dmag[i127]**2 + dmag[i125]**2)
-    dc139 = np.sqrt( dmag[i139]**2 + dmag[i140]**2)
-    dc153 = np.sqrt( dmag[i153]**2 + dmag[i160]**2)
+    logztype = {}
+    for model in ['Ia','Ibc','II']:
+        logztype[model] = logz[model][0]
+        for i in range( 1,len(logz[model]) ):
+            logztype[model] = np.logaddexp( logztype[model], logz[model][i] )
 
-    fig = pl.gcf()
-    ax1 = fig.add_subplot( 1,2,1 )
-    ax2 = fig.add_subplot( 1,2,2, sharex=ax1 )
+    logzall = np.logaddexp( np.logaddexp( logztype['Ia'], logztype['Ibc']), logztype['II'] )
+    pIa = np.exp( logztype['Ia'] - logzall )
+    pIbc = np.exp( logztype['Ibc'] - logzall )
+    pII = np.exp( logztype['II'] - logzall )
+    outdict['pIa'] = pIa
+    outdict['pIbc'] = pIbc
+    outdict['pII'] = pII
 
-    ax1.errorbar( c139, c127, dc127, dc139, marker='o', color='k', capsize=0, lw=2)
-    ax2.errorbar( c139, c153, dc153, dc139, marker='o', color='k', capsize=0, lw=2)
+    outdict['logztype'] = logztype
+    outdict['logzall'] = logzall
 
-
-
-def plotColorColor( snsim, plotstyle='points', nbins=None, **plotargs ):
-    """ plot the med band pseudo-colors in a color-color diagram
-    :param snsim:
-    :return:
-    """
-    import numpy as np
-    from matplotlib import pyplot as pl
-    from matplotlib import ticker
-
-    z = np.array([ sn.meta['z'] for sn in snsim ])
-    mag = np.array([ -2.5*np.log10( sn['flux'] ) + sn['zp'] for sn in snsim ])
-    # magerr = np.array( [2.5 * np.log10(np.e) *  sn['fluxerr']/ sn['flux'] for sn in sne])
-
-    flt = np.array( [sn['band'] for sn in snsim] )
-
-    i127 = np.where( flt=='f127m' )
-    i139 = np.where( flt=='f139m' )
-    i153 = np.where( flt=='f153m' )
-    i125 = np.where( flt=='f125w' )
-    i140 = np.where( flt=='f140w' )
-    i160 = np.where( flt=='f160w' )
-
-    fig = pl.gcf()
-    ax1 = fig.add_subplot(1,2,1)
-    ax2 = fig.add_subplot(1,2,2, sharex=ax1)
-
-    plotdefaults = {'marker':'o', 'alpha':0.3, 'color':'darkorange', 'ls':' '}
-    plotdefaults.update( **plotargs )
-    plotargs = plotdefaults
-
-    if plotstyle=='points':
-        ax1.plot( mag[i139]-mag[i140], mag[i127]-mag[i125], **plotdefaults )
-        ax2.plot( mag[i139]-mag[i140], mag[i153]-mag[i160], **plotdefaults )
-
-    elif plotstyle.startswith('contour'):
-        xarray = mag[i139]-mag[i140]
-        nsim = len(xarray)
-        if nbins is None : nbins = int( np.sqrt( nsim  ) )
-
-        plotdefaults = {'levels':[0.68,0.0],'colors':['r','g'],'ls':'-',
-                        'alpha':0.5, 'extend':'neither'}
-        plotdefaults.update( **plotargs )
-
-        # Plot filled contours, showing  the full extent of the population,
-        # and contour lines containing 68% of the population.
-        # First, bin the points into a 2-d histogram:
-        # (Note that we reverse the x-y order here to get the binned arrays
-        #  plotted in the correct direction )
-        for yarray,ax in zip( [mag[i127]-mag[i125], mag[i153]-mag[i160]], [ax1,ax2] ):
-
-            count,y,x = np.histogram2d( yarray, xarray, bins=nbins,
-                                        range=[[-0.5,0.5],[-0.5,0.5]] )
-
-            # Renormalize relative to the sum of all SNe in this class :
-            count /= count.sum()
-
-            # Now set up an array 'cabove' such that  the cell value in cabove[i,j]
-            # is equal to the sum of all cells that have a value higher than c[i,j]
-            cabove = scumsum( count )
-
-            # solid lines give probability contours at specified levels
-            # (defaults to 0.68 for "1-sigma contours")
-            ax.contour( x[:-1], y[:-1], cabove, **plotdefaults )
-            if plotstyle=='contourf' :
-                ax.contourf( x[:-1], y[:-1], cabove, **plotdefaults )
-
-    ax1.set_xlabel( 'F139M-F140W' )
-    ax1.set_ylabel( 'F127M-F125W' )
-    ax2.set_xlabel( 'F139M-F140W' )
-    ax2.set_ylabel( 'F153M-F160W' , rotation=-90)
-    ax2.yaxis.set_label_position('right')
-    ax2.yaxis.set_ticks_position('right')
-    ax2.yaxis.set_ticks_position('both')
-
-    ax1.xaxis.set_major_locator( ticker.MultipleLocator( 0.1 ) )
-    ax1.xaxis.set_minor_locator( ticker.MultipleLocator( 0.05 ) )
-    ax2.xaxis.set_major_locator( ticker.MultipleLocator( 0.1 ) )
-    ax2.xaxis.set_minor_locator( ticker.MultipleLocator( 0.05 ) )
-    ax1.yaxis.set_major_locator( ticker.MultipleLocator( 0.1 ) )
-    ax1.yaxis.set_minor_locator( ticker.MultipleLocator( 0.05 ) )
-    ax2.yaxis.set_major_locator( ticker.MultipleLocator( 0.1 ) )
-    ax2.yaxis.set_minor_locator( ticker.MultipleLocator( 0.05 ) )
-
-    ax1.set_xlim( -0.25, 0.35 )
-    ax1.set_ylim( -0.49, 0.25 )
-    ax2.set_ylim( -0.19, 0.35 )
-
-
-    fig.subplots_adjust( left=0.12, bottom=0.12, right=0.88, top=0.95, wspace=0.1 )
-
-    pl.draw()
-
-
-def mkCircleFig( simIa=None, simCC=None, z_range=[1.8,2.2], nsim=100,
-                 nbins=None, **plotargs ):
-    """ Make a circle diagram, i.e. a med-wide band pseudo-color-color plot,
-    showing both Type Ia and CC simulations over the given redshift range.
-    :param snsim:
-    :return:
-    """
-    from matplotlib import pyplot as pl
-    from pytools import plotsetup
-    import numpy as np
-
-    if simIa is None :
-        simIa = mcSim( 'Ia', z_range=z_range, nsim=nsim )
-    if simCC is None :
-        simCC = mcSim( 'CC', z_range=z_range, nsim=nsim )
-
-    fig = plotsetup.fullpaperfig( figsize=[8,4] )
-
-    plotColorColor(simIa,nbins=nbins, plotstyle='contourf',levels=[0.68,0.], colors=['darkmagenta'] )
-    plotColorColor(simCC,nbins=nbins, plotstyle='contourf',levels=[0.68,0.], colors=['teal'] )
-
-    ax1 = fig.add_subplot(1,2,1)
-    ax2 = fig.add_subplot(1,2,2, sharex=ax1)
-
-    ax1.set_xlim( -0.25, 0.3 )
-    ax1.set_ylim( -0.45, 0.2 )
-    ax2.set_ylim( -0.2, 0.3 )
-
-    ax1.text( 0.1, 0.1, 'SN Ia', color='darkmagenta',
-              ha='left',va='bottom')#,transform=ax1.transAxes,fontsize=14)
-    ax1.text( 0., -0.05, 'CC SN', color='teal',
-              ha='center',va='center')#,transform=ax1.transAxes,fontsize=14)
-    pl.draw()
-
-
-def scumsum( a ):
-    """
-    Sorted Cumulative Sum function :
-    Construct an array "sumabove" such that the cell at index i in sumabove
-    is equal to the sum of all cells from the input array "a" that have a
-    cell value higher than a[i]
-    """
-    # Collapse the array into 1 dimension
-    sumabove = a.ravel()
-
-    # Sort the raveled array by descending cell value
-    iravelsorted = sumabove.argsort( axis=0 )[::-1]
-
-    # Reassign each cell to be the cumulative sum of all
-    # input array cells with a higher value :
-    sumabove[iravelsorted] = sumabove[iravelsorted].cumsum()
-
-    # Now unravel back into shape of original array and return
-    return( sumabove.reshape( a.shape ) )
-
-
+    return( outdict )

@@ -1,5 +1,5 @@
-__all__=['colfax','stone','camille','bush', 'phot', 'snanasim','mkplots',
-         'snanaDemofig', 'getredshift', 'classify']
+__all__=['colfax','stone','camille','bush', 'phot', 'mkplots',
+          'getredshift', 'medband_classtest.py'] # 'snanaDemofig', 'snanasim',
 import colfax
 import stone
 import camille
@@ -7,9 +7,9 @@ import bush
 import phot
 import snanasim
 import mkplots
-import snanaDemofig
+# import snanaDemofig
 import getredshift
-import classify
+import medband_classtest
 
 _ALPHA2FILTER = {'H':'F160W','N':'F140W','J':'F125W',
                 'Q':'F153M','P':'F139M','O':'F127M',
