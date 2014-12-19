@@ -75,8 +75,8 @@ def mkExtinctionDemoFigSmall( z=2.0 ):
 
     ax1.legend(loc='upper left', bbox_to_anchor=(0.0,0.9),frameon=False,fontsize=11 )
     ax1.text( 0.08, 0.88, 'A$_V$', transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
-    ax1.text( 0.13, 0.88, 'F127M', color='darkmagenta',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
-    ax1.text( 0.23, 0.88, 'F153M', color='darkorange',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
+    ax1.text( 0.13, 0.88, '$\Delta$m$_{127}$', color='darkmagenta',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
+    ax1.text( 0.23, 0.88, '$\Delta$m$_{153}$', color='darkorange',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
 
     ax1.text( 0.14, 0.78, '%.3f'%colorlist1[0], color='darkmagenta',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )
     ax1.text( 0.23, 0.78, '%.3f'%colorlist2[0], color='darkorange',transform=ax1.transAxes, ha='left',va='bottom',fontsize=11 )

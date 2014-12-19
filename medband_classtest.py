@@ -46,7 +46,7 @@ class SncosmoSim( object ):
     """
     def __init__(self, sntype, observations=None, z_range=[1.8,2.2],
                  t0_range=[0,0], nsim=100, perfect=True,
-                 Om=0.3, H0=70 ):
+                 Om=0.3, H0=70, filterset='hst' ):
         """ Run a monte carlo sim using sncosmo to simulate <nsim> SNe
         of the given <sntype> over the given <z_range>.
 
@@ -67,7 +67,7 @@ class SncosmoSim( object ):
         self.perfect = perfect
 
         if observations is None :
-            observations = mkobservationsTable( )
+            observations = mkobservationsTable( filterset=filterset )
         self.observations = observations
 
         # Make a list of all the unique sncosmo source models available,
@@ -709,13 +709,30 @@ def colorColorClassify( sn=testsnIa, simIa=None, simCC=None,
 
     return( pIa )
 
-def mkobservationsTable( orbits=10.  ):
+def mkobservationsTable( filterset='hst', orbits=10.  ):
     from sncosmost.simparam import gethstzp, gethstbgnoise
     import numpy as np
     from astropy.table import Table
 
     # medium band at peak observation set :
-    bandlist = ['f127m','f139m','f153m','f125w','f140w','f160w']
+    if filterset == 'hst' :
+        bandlist = ['f098m','f127m','f139m','f153m','f105w','f125w','f140w','f160w']
+    elif filterset == 'jwst_z2' :
+        bandlist = ['f140m','f162m','f182m','f210m',
+                    'f150w','f200w',]
+    elif filterset == 'jwst_z3' :
+        bandlist = ['f140m','f162m','f182m','f210m','f250m','f300m','f335m','f360m',
+                    'f150w','f200w','f277w','f356w']
+    elif filterset == 'jwst_z4' :
+        bandlist = ['f250m','f300m','f335m','f360m',
+                    'f277w','f356w']
+    elif filterset == 'jwst_z6' :
+        bandlist = ['f250m','f300m','f335m','f360m',
+                    'f277w','f356w' ]
+    elif filterset == 'jwst_z8' :
+        bandlist = ['f300m','f335m','f360m','f410m','f430m','f460m','f480m',
+                    'f356w','f444w']
+
     if not np.iterable( orbits ) : orbits = np.ones(len(bandlist)) * orbits
     exptimelist = orbits * 2500
 

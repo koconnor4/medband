@@ -1,41 +1,40 @@
 
 # Dictionary of sncosmo CCSN model names and their corresponding SN sub-type
-SubClassDict = {
-           # For simulations containing only Type II sub-types
+SubClassDict_SNANA = {
            'ii':{
-           'iip.01':'IIP','iip.02':'IIP','iip.03':'IIP','iip.04':'IIP','iip.05':'IIP','iip.06':'IIP','iip.07':'IIP','iip.08':'IIP','iip.09':'IIP','iip.10':'IIP',
-           'iip.11':'IIP','iip.12':'IIP','iip.13':'IIP','iip.14':'IIP','iip.15':'IIP','iip.16':'IIP','iip.17':'IIP','iip.18':'IIP','iip.19':'IIP','iip.20':'IIP',
-           'iip.21':'IIP','iip.22':'IIP','iip.23':'IIP','iip.24':'IIP',
-           'iin.01':'IIn','iin.02':'IIn',
-           },
-           # For simulations containing only Type Ib/c sub-types
+               'iip.01':'IIP','iip.02':'IIP','iip.03':'IIP','iip.04':'IIP','iip.05':'IIP','iip.06':'IIP','iip.07':'IIP','iip.08':'IIP','iip.09':'IIP','iip.10':'IIP',
+               'iip.11':'IIP','iip.12':'IIP','iip.13':'IIP','iip.14':'IIP','iip.15':'IIP','iip.16':'IIP','iip.17':'IIP','iip.18':'IIP','iip.19':'IIP','iip.20':'IIP',
+               'iip.21':'IIP','iip.22':'IIP','iip.23':'IIP','iip.24':'IIP',
+               'iin.01':'IIn','iin.02':'IIn',
+               },
            'ibc':{
-           'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.05':'Ib','ib.06':'Ib','ib.07':'Ib',
-           'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic','ic.04':'Ic','ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic',
-           },
-           # For simulations containing all CC SN sub-types
-           'cc':{
-           'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.05':'Ib','ib.06':'Ib','ib.07':'Ib',
-           'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic','ic.04':'Ic','ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic',
-           'iip.01':'IIP','iip.02':'IIP','iip.03':'IIP','iip.04':'IIP','iip.05':'IIP','iip.06':'IIP','iip.07':'IIP','iip.08':'IIP','iip.09':'IIP','iip.10':'IIP',
-           'iip.11':'IIP','iip.12':'IIP','iip.13':'IIP','iip.14':'IIP','iip.15':'IIP','iip.16':'IIP','iip.17':'IIP','iip.18':'IIP','iip.19':'IIP','iip.20':'IIP',
-           'iip.21':'IIP','iip.22':'IIP','iip.23':'IIP','iip.24':'IIP',
-           'iin.01':'IIn','iin.02':'IIn',
-           },
+               'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.05':'Ib','ib.06':'Ib','ib.07':'Ib',
+               'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic','ic.04':'Ic','ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic',
+               },
+           'ia': {'salt2-extended':'Ia'},
+}
+
+
+SubClassDict_PSNID = {
+           'ii':{ 's11-2004hx':'II','s11-2005lc':'IIP','s11-2005gi':'IIP','s11-2006jl':'IIP' },
+           'ibc':{ 's11-2005hl':'Ib','s11-2005hm':'Ib','s11-2006fo':'Ic', 's11-2006jo':'Ib'},
            'ia': {'salt2':'Ia'},
 }
 
-# Probability that a CC SN belongs to any given CC sub-class (Ib,Ic,IIP,IIL,IIn)
-# from Li et al 2011a
-ccSubClassProbs = {
-           # For simulations containing only Type II sub-types
-           'ii':{'IIP':0.7,'IIn':0.3 },
-           # For simulations containing only Type Ib/c sub-types
-           'ibc':{'Ib':0.46,'Ic':0.54},
-           # For simulations containing all CC sub-types together
-           'cc':{'Ib':0.19/0.76*0.46,'Ic':0.19/0.76*0.54,
-                 'IIP':0.57/0.76*0.7,'IIn':0.57/0.76*0.3 },
-           }
+SubClassDict_NOTPSNID = {
+           'ii':{  # 'iip.01':'IIP','iip.02':'IIP','iip.05':'IIP',
+               'iip.03':'IIP','iip.04':'IIP','iip.06':'IIP','iip.07':'IIP','iip.08':'IIP','iip.09':'IIP','iip.10':'IIP',
+               'iip.11':'IIP','iip.12':'IIP','iip.13':'IIP','iip.14':'IIP','iip.15':'IIP','iip.16':'IIP','iip.17':'IIP','iip.18':'IIP','iip.19':'IIP','iip.20':'IIP',
+               'iip.21':'IIP','iip.22':'IIP','iip.23':'IIP','iip.24':'IIP',
+               'iin.01':'IIn','iin.02':'IIn',
+               },
+           'ibc':{
+               'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.07':'Ib', # 'ib.05':'Ib' 'ib.06':'Ib',
+               'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic', 'ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic', # 'ic.04':'Ic'
+               },
+           'ia': {'salt2-extended':'Ia'},
+}
+
 
 
 
@@ -203,95 +202,114 @@ def gauss( x, mu, sigma, range=None):
 
 
 
-def get_evidence( sn=testsnIa, model='salt2',
-                 zphot=1.9, zphoterr=0.05, t0_range=None,
-                 zminmax=[0.1,2.8], nobj=100, maxiter=1000, verbose=True ):
+def get_evidence( sn=testsnIa, modelsource='salt2',
+                 zhost=None, zhosterr=None, t0_range=None,
+                 zminmax=[0.1,2.8],
+                 nobj=100, maxiter=1000, verbose=True ):
     """  compute the Bayesian evidence (and likelihood distributions)
     for the given SN class using the sncosmo nested sampling algorithm.
     :return:
     """
+    import os
     import numpy as np
+    from scipy import interpolate, integrate
     import sncosmo
     import time
-    runtime0 = time.time()
+    tstart = time.time()
 
     # standardize the data column names and normalize to zpt=25 AB
     sn = sncosmo.fitting.standardize_data( sn )
     sn = sncosmo.fitting.normalize_data( sn )
 
-    if np.iterable( zphoterr ) :
-        assert np.sign(zphoterr[0])!=np.sign(zphoterr[1]), \
-            "zphoterr must be [+err,-err] or [-err,+err] :  " \
-            "i.e. components must have opposite signs"
-        zphotminus = - np.min( zphoterr )
-        zphotplus = np.max( zphoterr )
+    # Define parameter bounds and priors for z, x1, c, Rv, etc
+    if zhost is None :
+        zhost = None
+    elif isinstance(zhost,str) :
+        # read in the z prior from a file giving z and p(z)
+        assert os.path.isfile( zhost ), "If zprior is a string, it must be a filename"
+        z,pdf = np.loadtxt( zhost, unpack=True )
+        # normalize so that it integrates to unity over the allowed z range
+        izgood = np.where( (zminmax[0]<z) & (z<zminmax[1]) )[0]
+        pdfint = integrate.simps( pdf[izgood], z[izgood] )
+        pdf = pdf / pdfint
+        zprior = interpolate.interp1d( z, pdf, bounds_error=False, fill_value=0)
+        import pdb; pdb.set_trace()
     else :
-        zphotminus = zphotplus = zphoterr
-    zmin, zmax = zminmax
-    z_range = [ max( zmin, zphot-zphotminus*5), min(zmax,zphot+zphotplus*5) ]
-
-
-    # Define gaussian priors for z, x1, c
-    # For the redshift prior, renormalize
+        if zhosterr is None :
+            zhosterr = 0.1
+        if np.iterable( zhosterr ) :
+            assert np.sign(zhosterr[0])!=np.sign(zhosterr[1]), \
+                "zphoterr must be [+err,-err] or [-err,+err] :  " \
+                "i.e. components must have opposite signs"
+            zhostminus = - np.min( zhosterr )
+            zhostplus = np.max( zhosterr )
+        else :
+            zhostminus = zhostplus = zhosterr
+        zmin, zmax = zminmax
+        zminmax = [ max( zmin, zhost-zhostminus*5), min(zmax,zhost+zhostplus*5) ]
+        def zprior( z ) :
+            return( gauss( z, zhost, [-zhostminus,zhostplus], range=zminmax ) )
 
     if t0_range is None :
         t0_range = [sn['time'].min()-20,sn['time'].max()+20]
-    bounds={'z':(z_range[0],z_range[1]),'t0':(t0_range[0],t0_range[1]) }
 
-    def zprior( z ) :
-        return( gauss( z, zphot, [-zphotminus,zphotplus], range=bounds['z'] ) )
+    if zhosterr>0.01 :
+        bounds={'z':(zminmax[0],zminmax[1]),'t0':(t0_range[0],t0_range[1]) }
+    else :
+        bounds={'t0':(t0_range[0],t0_range[1]) }
 
-    if model.lower().startswith('salt2') :
+    if modelsource.lower().startswith('salt2') :
         # define the Ia SALT2 model parameter bounds and priors
-        model = sncosmo.Model( source='salt2')
-        param_names = ['z','t0','x0','x1','c']
+        model = sncosmo.Model( source=modelsource)
+        if zhosterr>0.01 :
+            param_names = ['z','t0','x0','x1','c']
+        else :
+            param_names = ['t0','x0','x1','c']
         bounds['x1'] = (-5.,5.)
         bounds['c'] = (-0.5,3.0)
         def x1prior( x1 ) :
             return( gauss( x1, 0, [-1.5,0.9], range=bounds['x1'] ) )
         def cprior( c ) :
             return( gauss( c, 0, [-0.08,0.14], range=bounds['c'] ) )
-        priorfn = {'z':zprior, 'x1':x1prior, 'c':cprior}
+        if zhost :
+            priorfn = {'z':zprior, 'x1':x1prior, 'c':cprior}
+        else :
+            priorfn = { 'x1':x1prior, 'c':cprior }
 
     else :
         # define a host-galaxy dust model
         dust = sncosmo.CCM89Dust( )
 
         # Define the CC model, parameter bounds and priors
-        model = sncosmo.Model( source=model, effects=[dust],
+        model = sncosmo.Model( source=modelsource, effects=[dust],
                                effect_names=['host'], effect_frames=['rest'])
 
-        param_names = ['z','t0','amplitude','hostebv','hostr_v']
+        if zhosterr>0.01 :
+            param_names = ['z','t0','amplitude','hostebv','hostr_v']
+        else :
+            param_names = ['t0','amplitude','hostebv','hostr_v']
         bounds['hostebv'] = (0.0,1.0)
         bounds['hostr_v'] = (2.0,4.0)
         def rvprior( rv ) :
             return( gauss( rv, 3.1, 0.3, range=bounds['host_rv'] ) )
         # TODO : include a proper Av or E(B-V) prior for CC models
-        priorfn = {'z':zprior, 'rv':rvprior }
+        if zhost and zhosterr>0.01:
+            priorfn = {'z':zprior, 'rv':rvprior }
+        else :
+            priorfn = { 'rv':rvprior }
 
-    model.set(z=zphot)
-
-    # first find the min chi2 parameter set
-    #runtime1 = time.time()
-    #minchi2res, minchi2mod = sncosmo.fit_lc( sn, salt2, param_names, bounds=bounds )
-
-    runtime2 = time.time()
-    #if verbose : print("chi2 minimization time = %.1f sec"%(runtime2-runtime1))
-
+    model.set(z=np.mean(zminmax))
 
     res, fit = sncosmo.fitting.nest_lc( sn, model, param_names, bounds,
                                         guess_amplitude_bound=True,
                                         priors=priorfn,
                                         nobj=nobj, maxiter=maxiter,
                                         verbose=verbose )
-    runtime3 = time.time()
-    if verbose : print("nested sampler time = %.1f sec"%(runtime3-runtime2))
-    if verbose : print("Total Fitting time = %.1f sec"%(runtime3-runtime0))
+    tend = time.time()
+    if verbose : print("  Total Fitting time = %.1f sec"%(tend-tstart))
+    return( sn, res, fit, priorfn )
 
-    pdf  = get_marginal_pdfs( res )
-    return( sn, res, fit, pdf, priorfn )
-
-def get_marginal_pdfs( res, nbins=101, verbose=True ):
+def get_marginal_pdfs( res, nbins=51, verbose=True ):
     """ Given the results <res> from a nested sampling chain, determine the
     marginalized posterior probability density functions for each of the
     parameters in the model.
@@ -306,6 +324,7 @@ def get_marginal_pdfs( res, nbins=101, verbose=True ):
        across that bin.
     """
     import numpy as np
+    import sncosmo
     param_names = res.param_names
     weights = res.weights
     samples = res.samples
@@ -315,17 +334,21 @@ def get_marginal_pdfs( res, nbins=101, verbose=True ):
         ipar = param_names.index( param )
         paramvals = samples[:,ipar]
 
-        if param in res.bounds :
-            parvalmin, parvalmax = res.bounds[param]
-        else :
-            parvalmin, parvalmax = 0.99*paramvals.min(), 1.01*paramvals.max()
-        parambins = np.linspace( parvalmin, parvalmax, nbins, endpoint=True )
-        binindices = np.digitize( paramvals, parambins )
+        if nbins>1:
+            if param in res.bounds :
+                parvalmin, parvalmax = res.bounds[param]
+            else :
+                parvalmin, parvalmax = 0.99*paramvals.min(), 1.01*paramvals.max()
+            parambins = np.linspace( parvalmin, parvalmax, nbins, endpoint=True )
+            binindices = np.digitize( paramvals, parambins )
 
-        # we estimate the marginalized pdf by summing the weights of all points in the bin,
-        # where the weight of each point is the prior volume at that point times the
-        # likelihood, divided by the total evidence
-        pdf = np.array( [ weights[np.where( binindices==ibin )].sum() for ibin in range(len(parambins)) ] )
+            # we estimate the marginalized pdf by summing the weights of all points in the bin,
+            # where the weight of each point is the prior volume at that point times the
+            # likelihood, divided by the total evidence
+            pdf = np.array( [ weights[np.where( binindices==ibin )].sum() for ibin in range(len(parambins)) ] )
+        else :
+            parambins = None
+            pdf = None
 
         mean = (weights  * samples[:,ipar]).sum()
         std = np.sqrt( (weights * (samples[:,ipar]-mean)**2 ).sum() )
@@ -334,13 +357,25 @@ def get_marginal_pdfs( res, nbins=101, verbose=True ):
 
         if verbose :
             if np.abs(std)>=0.1:
-                print( '<%s> =  %.1f +- %.1f'%( param, np.round(mean,1), np.round(std,1))  )
+                print( '  <%s> =  %.2f +- %.2f'%( param, np.round(mean,2), np.round(std,2))  )
             elif np.abs(std)>=0.01:
-                print( '<%s> =  %.2f +- %.2f'%( param, np.round(mean,2), np.round(std,2)) )
+                print( '  <%s> =  %.3f +- %.3f'%( param, np.round(mean,3), np.round(std,3)) )
             elif np.abs(std)>=0.001:
-                print( '<%s> =  %.3f +- %.3f'%( param, np.round(mean,3), np.round(std,3)) )
+                print( '  <%s> =  %.4f +- %.4f'%( param, np.round(mean,4), np.round(std,4)) )
             else :
-                print( '<%s> = %.3e +- %.3e'%( param, mean, std) )
+                print( '  <%s> = %.3e +- %.3e'%( param, mean, std) )
+
+
+        if param == 'x0' :
+            salt2 = sncosmo.Model( source='salt2')
+            salt2.source.set_peakmag( 0., 'bessellb', 'ab' )
+            x0_AB0 = salt2.get('x0')
+            mBmean = -2.5*np.log10(  mean / x0_AB0 )
+            mBstd = 2.5*np.log10( np.e ) *  std / mean
+            mBbins = -2.5*np.log10(  parambins / x0_AB0 )
+
+            pdfdict['mB'] = ( mBbins, pdf, mBmean, mBstd )
+            print( '  <%s> =  %.3f +- %.3f'%( 'mB', np.round(mBmean,3), np.round(mBstd,3)) )
 
     return( pdfdict )
 
@@ -384,12 +419,13 @@ def plot_marginal_pdfs( res, nbins=101, **kwargs):
     pl.draw()
 
 
-def classify( sn, zphot=1.9, zphoterr=0.05, t0_range=None,
-              zminmax=[0.1,2.8], nobj=100, maxiter=1000, verbose=True ):
+def classify( sn, zhost=1., zhosterr=1., t0_range=None, zminmax=[0.1,2.8],
+              nobj=100, maxiter=1000, templateset='PSNID',
+              nsteps_pdf=0, verbose=True ):
     """  Collect the bayesian evidence for all SN sub-classes.
     :param sn:
-    :param zphot:
-    :param zphoterr:
+    :param zhost:
+    :param zhosterr:
     :param t0_range:
     :param zminmax:
     :param nobj:
@@ -398,39 +434,77 @@ def classify( sn, zphot=1.9, zphoterr=0.05, t0_range=None,
     :return:
     """
     import numpy as np
+    import time
 
-    iimodelnames = SubClassDict['ii'].keys()[:1]
-    ibcmodelnames = SubClassDict['ibc'].keys()[:1]
-    iamodelnames = SubClassDict['ia'].keys()[:1]
+    tstart = time.time()
+
+    if templateset.lower()=='psnid':
+        SubClassDict = SubClassDict_PSNID
+    elif templateset.lower()=='snana':
+        SubClassDict = SubClassDict_SNANA
+    elif templateset.lower()=='notpsnid':
+        SubClassDict = SubClassDict_NOTPSNID
+
+    iimodelnames = SubClassDict['ii'].keys()
+    ibcmodelnames = SubClassDict['ibc'].keys()
+    iamodelnames = SubClassDict['ia'].keys()
 
     outdict = {}
-    allmodelnames = np.append( np.append( iamodelnames, iimodelnames), ibcmodelnames )
+    allmodelnames = np.append(np.append(iimodelnames, ibcmodelnames), iamodelnames)
+
+    logpriordict = {
+        'ia':np.log(0.24/len(iamodelnames)),
+        'ibc':np.log(0.19/len(ibcmodelnames)),
+        'ii':np.log(0.57/len(iimodelnames)),
+        }
 
     logz = { 'Ia':[], 'II':[], 'Ibc':[] }
-    for model in allmodelnames :
-        sn, res, fit, pdf, priorfn = get_evidence(
-            sn, model=model, zphot=zphot, zphoterr=zphoterr,
+    bestlogz = -np.inf
+    for modelsource in allmodelnames :
+        if verbose >1 :
+            dt = time.time()-tstart
+            print('------------------------------')
+            print( "model: %s  dt=%i sec"%( modelsource, dt))
+        sn, res, fit, priorfn = get_evidence(
+            sn, modelsource=modelsource, zhost=zhost, zhosterr=zhosterr,
             t0_range=t0_range, zminmax=zminmax,
-            nobj=nobj, maxiter=maxiter, verbose=verbose )
+            nobj=nobj, maxiter=maxiter, verbose=max(0,verbose-1) )
 
-        outdict[model] = {'sn':sn, 'res':res, 'fit':fit, 'pdf':pdf, 'priorfn':priorfn }
-        if model in SubClassDict['ii'].keys() :
-            logz['II'].append( res.logz )
-        elif model in SubClassDict['ibc'].keys() :
-            logz['Ibc'].append( res.logz )
-        elif model in SubClassDict['ia'].keys() :
-            logz['Ia'].append( res.logz )
+        if nsteps_pdf :
+            pdf =  get_marginal_pdfs( res, nbins=nsteps_pdf, verbose=max(0,verbose-1) )
+        else :
+            pdf = None
+        outdict[modelsource] = {'sn':sn, 'res':res, 'fit':fit, 'pdf':pdf, 'priorfn':priorfn }
 
+        if res.logz>bestlogz :
+            outdict['bestmodel'] = modelsource
+            bestlogz = res.logz
+
+        # multiply the model evidence by the sub-type prior
+        if modelsource in iimodelnames :
+            logprior = logpriordict['ii']
+            logz['II'].append( logprior + res.logz )
+        elif modelsource in ibcmodelnames :
+            logprior = logpriordict['ibc']
+            logz['Ibc'].append( logprior + res.logz )
+        elif modelsource in iamodelnames :
+            logprior = logpriordict['ia']
+            logz['Ia'].append( logprior + res.logz )
+
+    # sum up the evidence from all models for each sn type
     logztype = {}
-    for model in ['Ia','Ibc','II']:
-        logztype[model] = logz[model][0]
-        for i in range( 1,len(logz[model]) ):
-            logztype[model] = np.logaddexp( logztype[model], logz[model][i] )
+    for modelsource in ['II','Ibc','Ia']:
+        logztype[modelsource] = logz[modelsource][0]
+        for i in range( 1,len(logz[modelsource]) ):
+            logztype[modelsource] = np.logaddexp( logztype[modelsource], logz[modelsource][i] )
 
+    # define the total evidence (final denominator in Bayes theorem) and then
+    # the classification probabilities
     logzall = np.logaddexp( np.logaddexp( logztype['Ia'], logztype['Ibc']), logztype['II'] )
     pIa = np.exp( logztype['Ia'] - logzall )
     pIbc = np.exp( logztype['Ibc'] - logzall )
     pII = np.exp( logztype['II'] - logzall )
+
     outdict['pIa'] = pIa
     outdict['pIbc'] = pIbc
     outdict['pII'] = pII

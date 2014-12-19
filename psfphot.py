@@ -142,7 +142,7 @@ def mk_datfiles( sn='colfax', masterphotfile='psfphot_medband.dat') :
 
 
 
-def mk_master_phot_file( infile='round2sn_force_all.txt', outfile='psfphot_medband.dat',
+def mk_master_phot_file( infile='candels.phot', outfile='psfphot_medband.dat',
                         doapphot=True, acsfile='apphot_medband_acsuvis.dat' ):
     """  read in a .txt file from Dan and convert it to a human-readable
     formatted ascii file
@@ -176,7 +176,7 @@ def mk_master_phot_file( infile='round2sn_force_all.txt', outfile='psfphot_medba
     irtab.rename_column( 'apphot', 'mag_apDS' )
     irtab.rename_column( 'apphoterr', 'magerr_apDS' )
     irtab.rename_column( 'psfphotstack_zp', 'zpt_psf' )
-    irtab.rename_column( 'drop_error_mag', 'magerr_drop' )
+    # irtab.rename_column( 'drop_error_mag', 'magerr_drop' )
     irtab.rename_column( 'sky', 'fsky_psf' )
     irtab.rename_column( 'skyerr', 'fskyerr_psf' )
 
@@ -230,12 +230,12 @@ def mk_master_phot_file( infile='round2sn_force_all.txt', outfile='psfphot_medba
             irtab.add_column( newcol, index=8 )
 
     irtab.remove_columns( [ 'mag_apDS', 'magerr_apDS', 'file', 'filt', 'scale', 'aper', 'psfphotstack_psf', 'psf_model_mag', 'id', 'syntemp', 'x1','x2','y1','y2','ra','dec', 'psfphotidl3','psfphotidl_zp','psfphoterr3','psfphotidl_psf', 'drop_median',  'fsky_psf', 'fskyerr_psf',   'fsky_ap', 'fskyerr_ap', 'zpt_psf',]  )
-    neworder = ('sn', 'band', 'epoch', 'mjd',   'mag_psf', 'magerr_psf', 'magerr_drop', 'mag_ap',  'magerr_ap', 'flux_psf', 'fluxerr_psf', 'flux_ap', 'fluxerr_ap',  'zpt_AB',  'nexp', 'exptime', 'imtype')
+    neworder = ('sn', 'band', 'epoch', 'mjd',   'mag_psf', 'magerr_psf', 'mag_ap',  'magerr_ap', 'flux_psf', 'fluxerr_psf', 'flux_ap', 'fluxerr_ap',  'zpt_AB',  'nexp', 'exptime', 'imtype')
     newirtab = irtab[neworder]
 
     acstab = ascii.read( acsfile, format='fixed_width' )
-    acsmagerrdropcol = Column( name='magerr_drop', data=acstab['magerr_ap'] )
-    acstab.add_column( acsmagerrdropcol )
+    # acsmagerrdropcol = Column( name='magerr_drop', data=acstab['magerr_ap'] )
+    # acstab.add_column( acsmagerrdropcol )
     outtab = vstack( [newirtab, acstab], join_type='outer' )
     outtab.sort( ['sn','band','epoch'] )
 

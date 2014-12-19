@@ -29,100 +29,106 @@ DEMO.mjdpk = 0.0
 DEMO.mjdmedband = 0.0
 DEMO.z_range = [1.8, 2.2]
 
+JWST2 = supernova('jwst2')
+JWST2.mjdpk = 0.0
+JWST2.mjdmedband = 0.0
+#JWST.z_range = [2.8, 3.2]
+JWST2.z_range = [1.6, 2.4]
+
+JWST3 = supernova('jwst3')
+JWST3.mjdpk = 0.0
+JWST3.mjdmedband = 0.0
+#JWST.z_range = [2.8, 3.2]
+JWST3.z_range = [2.6, 3.4]
+
+
 STONE = supernova('stone')
 STONE.mjdpk = 56482.
 STONE.mjdmedband = 56475.
 STONE.z_range = [1.6, 2.2]
 STONE.mag = { # from idl5 psf fitting
-            'f139m':25.4198,
-            'f140w':25.3622,
-            'f153m':25.5056,
-            'f160w':25.2278,
+            'f139m':25.375,
+            'f140w':25.344, # 25.349, # <- from fit.
+            #'f140w':25.344,
+            'f153m':25.464,
+            'f160w':25.233, # 25.354, # <- from fit.
+            #'f160w':25.233,
             }
 STONE.magerr = { # from drop method
-            'f139m':0.182164 ,
-            'f140w':0.0920638,
-            'f153m':0.185014 ,
-            'f160w':0.0731440,
+            'f139m':0.248,
+            'f140w':0.155, # 0.01, # <- from fit.
+            'f153m':0.188,
+            'f160w':0.08, # 0.01, # <- from fit.
             }
 
 COLFAX = supernova('colfax')
 COLFAX.mjdpk = 56078.
 COLFAX.mjdmedband = 56084.
-COLFAX.z_range = [1.8, 2.2]
-COLFAX.mag = {  # using idl5 composite psf model
-        'f127m':25.6632,
-        'f125w':26.1074,
-        'f139m':25.6426,
-        'f140w':25.7317,
-        'f153m':25.7860,
-        'f160w':25.9274,
-        }
+COLFAX.z_range = [1.9, 2.4]
+COLFAX.mag = {  # final photometry 2014.10.21
+                'f127m':25.677,
+                'f139m':25.628,
+                'f153m':25.791,
+                'f125w':26.106,
+                'f140w':25.734,
+                'f160w':25.931,
+                }
 COLFAX.magerr = { # using the drop-and-recover psf fitting err method
-        'f125w':0.126760,
-        'f127m':0.102688,
-        'f139m':0.132692,
-        'f140w':0.043144,
-        'f153m':0.170073,
-        'f160w':0.117535,
-        }
+                  'f127m':0.124,
+                  'f139m':0.157,
+                  'f153m':0.190,
+                  'f125w':0.163,
+                  'f140w':0.100,
+                  'f160w':0.160,
+                  }
 
 BUSH = supernova('bush')
 BUSH.mjdpk = 55797.
-BUSH.mjdmedband = 55803.
-BUSH.z_range = [ 1.16, 2.36 ]
-BUSH.mag = { # from psf model based on the multi-epoch stack
-             'f125w':25.9464,
-             'f127m':25.9610,
-             'f139m':25.6361,
-             'f140w':26.2892,
-             'f153m':25.3578,
-             'f160w':25.9097,
+BUSH.mjdmedband = 55803.5
+BUSH.z_range = [ 0.77, 1.34 ]  # host photoz 68% conf. region
+# BUSH.z_range = [ 0.26, 2.21 ]
+BUSH.mag = { # from psf phot  (entered 2010.10.20)
+             'f098m':26.474,
+             'f127m':25.961,
+             'f139m':25.569,
+             'f153m':25.463,
+             'f105w':26.068,
+             'f125w':25.953,
+             'f160w':25.891,
+             'f140w':25.937,
              }
-
-BUSH.mag = { # from aperture phot in 0.3" aperture
-             'f125w':25.9464,
-             'f127m':25.9610,
-             'f139m':25.6361,
-             'f140w':26.2892,
-             'f153m':25.3578,
-             'f160w':25.9097,
-             }
-
-BUSH.magerr = { # from drop method
-         'f125w':0.106712,
-         'f127m':0.184979,
-         'f139m':0.214549,
-         'f140w':0.1162	 ,
-         'f153m':0.160024,
-         'f160w':0.138843,
-         }
-
-BUSH.mag = { # from aperture photometry
-             'f127m':25.788,
-             'f125w':25.944,
-             'f139m':25.563,
-             'f140w':26.289,
-             'f153m':25.574,
-             'f160w':25.804,
-             }
-BUSH.magerr = { # from aperture photometry
-                'f127m':0.173,
-                'f125w':0.099,
-                'f139m':0.159,
-                'f140w':0.116,
-                'f153m':0.169,
-                'f160w':0.113,
+BUSH.magerr = { # from drop-method psf errors  (entered 2010.10.20)
+                'f098m':0.175,
+                'f127m':0.241,
+                'f139m':0.215,
+                'f153m':0.211,
+                'f105w':0.132,
+                'f125w':0.131,
+                'f160w':0.148,
+                'f140w':0.144,
                 }
 
 def medband_matching_filter( medband ):
+    if medband=='f098m': return('f105w')
     if medband=='f127m': return('f125w')
     if medband=='f139m': return('f140w')
     if medband=='f153m': return('f160w')
+    if medband=='f140m': return('f150w')
+    if medband=='f162m': return('f150w')
+    if medband=='f182m': return('f200w')
+    if medband=='f210m': return('f200w')
+    if medband=='f250m': return('f277w')
+    if medband=='f300m': return('f277w')
+    if medband=='f335m': return('f356w')
+    if medband=='f360m': return('f356w')
+    if medband=='f410m': return('f444w')
+    if medband=='f430m': return('f444w')
+    if medband=='f460m': return('f444w')
+    if medband=='f480m': return('f444w')
 
 
 
-def sncosmo_sim( snroot='demo',
+def sncosmo_sim( snroot='demo', filterset='hst',
                  z_range=[1.8,2.2], t0_range=[-3,3],
                  nsim=1000,
                  verbose=True, clobber=False ):
@@ -154,7 +160,7 @@ def sncosmo_sim( snroot='demo',
         fin.close()
     else :
         if verbose: print("Running a new Ia simulation, then saving to pickle : %s"%simIapkl)
-        simIa = medband_classtest.SncosmoSim( 'Ia' , z_range=z_range, t0_range=t0_range, nsim=nsim )
+        simIa = medband_classtest.SncosmoSim( 'Ia' , z_range=z_range, t0_range=t0_range, nsim=nsim, filterset=filterset )
         fout = open( simIapkl, 'wb' )
         cPickle.dump( simIa, fout, protocol=-1 )
         fout.close()
@@ -166,7 +172,7 @@ def sncosmo_sim( snroot='demo',
         fin.close()
     else :
         if verbose: print("Running a new II simulation, then saving to pickle : %s"%simIIpkl)
-        simII = medband_classtest.SncosmoSim( 'II' , z_range=z_range, t0_range=t0_range, nsim=nsim )
+        simII = medband_classtest.SncosmoSim( 'II' , z_range=z_range, t0_range=t0_range, nsim=nsim, filterset=filterset )
         fout = open( simIIpkl, 'wb' )
         cPickle.dump( simII, fout, protocol=-1 )
         fout.close()
@@ -178,7 +184,7 @@ def sncosmo_sim( snroot='demo',
         fin.close()
     else :
         if verbose: print("Running a new Ibc simulation, then saving to pickle : %s"%simIbcpkl)
-        simIbc = medband_classtest.SncosmoSim( 'Ibc' , z_range=z_range, t0_range=t0_range, nsim=nsim )
+        simIbc = medband_classtest.SncosmoSim( 'Ibc' , z_range=z_range, t0_range=t0_range, nsim=nsim, filterset=filterset )
         fout = open( simIbcpkl, 'wb' )
         cPickle.dump( simIbc, fout, protocol=-1 )
         fout.close()
@@ -228,7 +234,7 @@ def _plot_colorcolor_singlesim( snsim, medbandx, medbandy,
         # (Note that we reverse the x-y order here to get the binned arrays
         #  plotted in the correct direction )
         count,y,x = np.histogram2d( mag[imy]-mag[iwy],mag[imx]-mag[iwx],
-                                    bins=nbins, range=[[-0.5,0.5],[-0.5,0.5]] )
+                                    bins=nbins, range=[[-1,1],[-1,1]] )
 
         # Renormalize relative to the sum of all SNe in this class :
         count /= count.sum()
@@ -334,19 +340,11 @@ def plot_redshift_circle(z_range=[1.8,2.2], t0=0,
     for z in zsteps :
         sn = sncosmo.Model( source=source )
         sn.set( z=z, t0=t0 )
-        medmags = {
-            'f127m':sn.bandmag('f127m', 'ab', t0),
-            'f139m':sn.bandmag('f139m', 'ab', t0),
-            'f153m':sn.bandmag('f153m', 'ab', t0), }
-        widemags = {
-            'f125w':sn.bandmag('f125w', 'ab', t0),
-            'f140w':sn.bandmag('f140w', 'ab', t0),
-            'f160w':sn.bandmag('f160w', 'ab', t0), }
         widebandx = medband_matching_filter(medbandx)
         widebandy = medband_matching_filter(medbandy)
 
-        colorx = medmags[medbandx]-widemags[widebandx]
-        colory = medmags[medbandy]-widemags[widebandy]
+        colorx = sn.bandmag(medbandx, 'ab', t0) - sn.bandmag(widebandx, 'ab', t0)
+        colory = sn.bandmag(medbandy, 'ab', t0) - sn.bandmag(widebandy, 'ab', t0)
         pl.plot( colorx, colory, **plotargs )
 
 
@@ -358,7 +356,7 @@ def plot_redshift_circle(z_range=[1.8,2.2], t0=0,
 def singlecircle( sn=None, sim1=None, sim2=None, sim3=None,
                   medbandx='f139m', medbandy='f153m',
                   contours=True, redshiftcircle=True,
-                  clobber=False, **plotargs ) :
+                  clobber=False, filterset='hst', nsim=2000, **plotargs ) :
     """  make a single color-color circle diagram from sncosmo monte carlo sims.
     :param sn:
     :param sim1:
@@ -377,14 +375,18 @@ def singlecircle( sn=None, sim1=None, sim2=None, sim3=None,
         sndat = COLFAX
     elif sn == 'bush' :
         sndat = BUSH
+    elif sn == 'jwst2' :
+        sndat = JWST2
+    elif sn == 'jwst3' :
+        sndat = JWST3
     elif sn == 'demo' or sn=='none' or sn is None :
         sndat = DEMO
 
     if sim1 is None :
         sim1, sim2, sim3 = sncosmo_sim( snroot = sndat.name,
                                         z_range= sndat.z_range,
-                                        t0_range=sndat.t0_range,
-                                        clobber=clobber )
+                                        t0_range=sndat.t0_range, nsim=nsim,
+                                        clobber=clobber, filterset=filterset )
 
     if contours :
         plotcontours( sim1, sim2, sim3, medbandx=medbandx, medbandy=medbandy, **plotargs )
@@ -399,7 +401,7 @@ def singlecircle( sn=None, sim1=None, sim2=None, sim3=None,
     widebandx = medband_matching_filter(medbandx)
     widebandy = medband_matching_filter(medbandy)
 
-    if sndat.name not in ['demo','none']:
+    if sndat.name not in ['demo','none','jwst','jwst2','jwst3']:
         snmag= sndat.mag
         snmagerr = sndat.magerr
         deltasnmagx = snmag[medbandx] - snmag[widebandx]
@@ -412,7 +414,7 @@ def singlecircle( sn=None, sim1=None, sim2=None, sim3=None,
         ax.errorbar( deltasnmagx, deltasnmagy,
                      deltasnmagerrx, deltasnmagerry,
                      marker='D', ms=10, elinewidth=2, capsize=0,
-                     color='darkorange' )
+                     color='k' )
 
     pl.draw()
     if sim3 is not None :
@@ -423,7 +425,8 @@ def singlecircle( sn=None, sim1=None, sim2=None, sim3=None,
 
 def doublecircle( sn='stone', sim1=None, sim2=None, sim3=None,
                   contours=True, redshiftcircle=True, clobber=False,
-                  **plotargs ):
+                  circle1bands=['f139m','f127m'], circle2bands=['f139m','f153m'],
+                  filterset='hst', nsim=2000, **plotargs ):
     """  Two circle diagrams in side-by-side plots
     :param sn:
     :param sim1:
@@ -439,98 +442,151 @@ def doublecircle( sn='stone', sim1=None, sim2=None, sim3=None,
     fig.clf()
     ax1 = pl.subplot( 1, 2, 1 )
     simlist  = singlecircle( sn=sn, sim1=sim1, sim2=sim2, sim3=sim3,
-                             medbandx='f139m', medbandy='f127m',
+                             medbandx=circle1bands[0], medbandy=circle1bands[1],
                              contours=contours, redshiftcircle=redshiftcircle,
-                             clobber=clobber, **plotargs )
+                             clobber=clobber, filterset=filterset, nsim=nsim, **plotargs )
     sim1,sim2,sim3 = simlist
 
-    ax2 = pl.subplot( 1, 2, 2, sharex=ax1 )
+    ax2 = pl.subplot( 1, 2, 2 )
     singlecircle( sn=sn, sim1=sim1, sim2=sim2, sim3=sim3,
-                  medbandx='f139m', medbandy='f153m',
+                  medbandx=circle2bands[0], medbandy=circle2bands[1],
                   contours=contours, redshiftcircle=redshiftcircle,
-                  clobber=clobber, **plotargs )
+                  clobber=clobber, filterset=filterset, **plotargs )
     ax2.yaxis.set_ticks_position('right')
     ax2.yaxis.set_ticks_position('both')
     ax2.yaxis.set_label_position('right')
+    ax2.yaxis.get_label().set_rotation(-90)
 
     return sim1, sim2, sim3
 
 
-def stonefig( simIa=None, simCC=None, contours=True, redshiftcircle=True,
+def sixcircles( sn='bush', sim1=None, sim2=None, sim3=None,
+                  contours=True, redshiftcircle=True, clobber=False,
+                  **plotargs ):
+    """  Two circle diagrams in side-by-side plots
+    :param sn:
+    :param sim1:
+    :param sim2:
+    :param contours:
+    :param redshiftcircle:
+    :param clobber:
+    :param plotargs:
+    :return:
+    """
+    from matplotlib import pyplot as pl
+    fig = pl.gcf()
+    fig.clf()
+    ax1 = pl.subplot( 2, 3, 1 )
+    simlist  = singlecircle( sn=sn, sim1=sim1, sim2=sim2, sim3=sim3,
+                             medbandx='f098m', medbandy='f127m',
+                             contours=contours, redshiftcircle=redshiftcircle,
+                             clobber=clobber, **plotargs )
+    sim1,sim2,sim3 = simlist
+
+    for iax,mbpair in zip( [2,3,4,5,6], [['f098m','f139m'], ['f098m','f153m'],
+                                         ['f127m','f139m'], ['f127m','f153m'],
+                                         ['f139m','f153m'] ] ) :
+        ax = pl.subplot( 2, 3, iax )
+        singlecircle( sn=sn, sim1=sim1, sim2=sim2, sim3=sim3,
+                      medbandx=mbpair[0], medbandy=mbpair[1],
+                      contours=contours, redshiftcircle=redshiftcircle,
+                      clobber=False, **plotargs )
+        #ax.yaxis.set_ticks_position('right')
+        #ax.yaxis.set_ticks_position('both')
+        #ax.yaxis.set_label_position('right')
+        #ax.yaxis.get_label().set_rotation(-90)
+
+    return sim1, sim2, sim3
+
+
+def stonefig( simIa=None, simIbc=None, simII=None, contours=True, redshiftcircle=True,
               clobber=False, **plotargs ):
     from pytools import plotsetup
     fig = plotsetup.halfpaperfig(3,[4,4])
 
-    simIa, simCC = singlecircle( 'stone', simIa, simCC, clobber=clobber,
-                                 medbandx='f139m', medbandy='f153m',
-                                 contours=contours, redshiftcircle=redshiftcircle,
-                                 **plotargs )
+    simIa, simIbc, simII = singlecircle( 'stone', simIa, simIbc, simII,
+                                         clobber=clobber,
+                                         medbandx='f139m', medbandy='f153m',
+                                         contours=contours, redshiftcircle=redshiftcircle,
+                                         **plotargs )
     fig = pl.gcf()
     ax = pl.gca()
     fig.subplots_adjust( left=0.18, bottom=0.12, right=0.95, top=0.95, wspace=0.1 )
 
     ax.set_xlim( -0.35, 0.35 )
-    ax.set_ylim( -0.3, 0.55 )
+    ax.set_ylim( -0.3, 0.45 )
 
     ax.text(  0.95, 0.95, 'GND13Sto' , transform=ax.transAxes,
-               ha='right',va='top', color='darkorange',fontsize=15,)
+               ha='right',va='top', color='k',fontsize=15,)
 
     pl.draw()
-    return simIa, simCC
+    return simIa, simIbc, simII
 
 
-def colfaxfig( simIa=None, simCC=None, contours=True, redshiftcircle=True,
+def colfaxfig( simIa=None, simIbc=None, simII=None, contours=True, redshiftcircle=True,
                clobber=False, **plotargs ):
     from pytools import plotsetup
     from matplotlib import pyplot as pl
-    fig = plotsetup.fullpaperfig(2,[8,4])
+    fig = plotsetup.fullpaperfig([8,4])
 
-    simIa, simCC = doublecircle( 'colfax', simIa, simCC, clobber=clobber,
-                                 contours=contours, redshiftcircle=redshiftcircle,
-                                 **plotargs )
+    simIa, simIbc, simII = doublecircle( 'colfax', simIa, simIbc, simII,
+                                         clobber=clobber,
+                                         circle1bands=['f139m','f127m'],
+                                         circle2bands=['f139m','f153m'],
+                                         contours=contours, redshiftcircle=redshiftcircle,
+                                         **plotargs )
     fig = pl.gcf()
-    ax1 = fig.add_subplot(1,2,1)
-    ax2 = fig.add_subplot(1,2,2,sharex=ax1)
-    fig.subplots_adjust( left=0.18, bottom=0.12, right=0.88, top=0.95, wspace=0.1 )
+    ax1,ax2 = fig.axes
+    fig.subplots_adjust( left=0.1, bottom=0.18, right=0.89, top=0.95, wspace=0.1 )
 
     ax1.set_xlim( -0.5, 0.4 )
-    ax1.set_ylim( -0.6, 0.3 )
+    ax1.set_ylim( -0.7, 0.4 )
+    ax2.set_xlim( -0.5, 0.4 )
     ax2.set_ylim( -0.4, 0.4 )
-
     ax2.text(  0.95, 0.95, 'GND12Col' , transform=ax2.transAxes,
-               ha='right',va='top', color='darkorange',fontsize=15,)
+               ha='right',va='top', color='k',fontsize=15,)
+    ax2.yaxis.labelpad=20
+
     pl.draw()
 
-    return simIa, simCC
+    return simIa, simIbc, simII
 
-def bushfig( simIa=None, simCC=None, contours=True, redshiftcircle=True,
+def bushfig( simIa=None, simIbc=None, simII=None, contours=True, redshiftcircle=False,
              clobber=False, **plotargs ):
     from pytools import plotsetup
-    from matplotlib import pyplot as pl
+    from matplotlib import pyplot as pl, ticker
 
-    #fig = plotsetup.fullpaperfig(1,[8,4])
+    fig = plotsetup.fullpaperfig( [8,4] )
 
-    simIa, simCC = doublecircle( 'bush', simIa, simCC, clobber=clobber,
-                                 contours=contours, redshiftcircle=redshiftcircle,
-                                 **plotargs )
+    simIa, simIbc, simII = doublecircle( 'bush', simIa, simIbc, simII, clobber=clobber,
+                                         circle1bands=['f098m','f153m'], circle2bands=['f127m','f139m'],
+                                         contours=contours, redshiftcircle=redshiftcircle,
+                                         **plotargs )
     fig = pl.gcf()
-    ax1 = fig.add_subplot(1,2,1)
-    ax2 = fig.add_subplot(1,2,2,sharex=ax1)
-    fig.subplots_adjust( left=0.18, bottom=0.12, right=0.88, top=0.95, wspace=0.1 )
+    ax1, ax2 = fig.axes
+    fig.subplots_adjust( left=0.1, bottom=0.18, right=0.89, top=0.95, wspace=0.1 )
 
-    ax1.set_xlim( -0.95, 0.5 )
-    ax1.set_ylim( -0.6, 0.3 )
-    ax2.set_ylim( -0.9, 0.4 )
+    ax1.set_xlim( -0.6, 0.95 )
+    ax1.set_ylim( -0.9, 0.5 )
+    ax2.set_xlim( -0.6, 0.6 )
+    ax2.set_ylim( -0.8, 0.6 )
+    ax2.yaxis.labelpad=20
+
+    for ax in [ax1,ax2]:
+        ax.xaxis.set_major_locator( ticker.MultipleLocator( 0.2 ) )
+        ax.xaxis.set_minor_locator( ticker.MultipleLocator( 0.1 ) )
+        ax.yaxis.set_major_locator( ticker.MultipleLocator( 0.2 ) )
+        ax.yaxis.set_minor_locator( ticker.MultipleLocator( 0.1 ) )
 
     #ax.text( 0.1, 0.1, 'SN Ia', color=color1,
     #          ha='left',va='top')#,transform=ax1.transAxes,fontsize=14)
     #ax.text( 0., -0.05, 'CC SN', color=color2,
     #          ha='center',va='top')#,transform=ax1.transAxes,fontsize=14)
-    ax2.text(  0.95, 0.95, 'GND12Bus' , transform=ax2.transAxes,
-               ha='right',va='top', color='darkorange',fontsize=15,)
+    ax2.text(  0.95, 0.95, 'GSD11Bus' , transform=ax2.transAxes,
+               ha='right',va='top', color='k',fontsize=15,)
     pl.draw()
 
-    return simIa, simCC
+    return simIa, simIbc, simII
 
 
 def classdemofig( sim1=None, sim2=None, sim3=None,
@@ -574,3 +630,43 @@ def classdemofig( sim1=None, sim2=None, sim3=None,
     return( sim1, sim2, sim3 )
 
 
+def jwstfig_z3( simIa=None, simIbc=None, simII=None,
+                contours=True,
+                redshiftcircle=True, clobber=False, nsim=2000,
+                **plotargs ):
+    from pytools import plotsetup
+    from matplotlib import pyplot as pl
+    fig = plotsetup.fullpaperfig([8,4])
+
+    simIa, simIbc, simII = doublecircle( 'jwst3', simIa, simIbc, simII,
+                                         clobber=clobber,
+                                         circle1bands=['f182m','f300m'],
+                                         circle2bands=['f210m','f300m'],
+                                         contours=contours, redshiftcircle=redshiftcircle,
+                                         filterset='jwst_z3', nsim=nsim, **plotargs)
+    ax1,ax2 = fig.axes
+    fig.subplots_adjust( left=0.1, bottom=0.18, right=0.89, top=0.95, wspace=0.1 )
+    ax2.yaxis.labelpad=20
+    pl.draw()
+    return simIa, simIbc, simII
+
+
+def jwstfig_z2( simIa=None, simIbc=None, simII=None,
+                contours=True,
+                redshiftcircle=True, clobber=False, nsim=2000,
+                **plotargs ):
+    from pytools import plotsetup
+    from matplotlib import pyplot as pl
+    fig = plotsetup.fullpaperfig([8,4])
+
+    simIa, simIbc, simII = doublecircle( 'jwst2', simIa, simIbc, simII,
+                                         clobber=clobber,
+                                         circle1bands=['f182m','f210m'],
+                                         circle2bands=['f210m','f300m'],
+                                         contours=contours, redshiftcircle=redshiftcircle,
+                                         filterset='jwst_z3', nsim=nsim, **plotargs)
+    ax1,ax2 = fig.axes
+    fig.subplots_adjust( left=0.1, bottom=0.18, right=0.89, top=0.95, wspace=0.1 )
+    ax2.yaxis.labelpad=20
+    pl.draw()
+    return simIa, simIbc, simII

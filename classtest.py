@@ -1,36 +1,8 @@
 
-# Dictionary of sncosmo CCSN model names and their corresponding SN sub-type
-ccSubClassDict = {
-           # For simulations containing only Type II sub-types
-           'ii':{
-           'iip.01':'IIP','iip.02':'IIP','iip.03':'IIP','iip.04':'IIP','iip.05':'IIP','iip.06':'IIP','iip.07':'IIP','iip.08':'IIP','iip.09':'IIP','iip.10':'IIP',
-           'iip.11':'IIP','iip.12':'IIP','iip.13':'IIP','iip.14':'IIP','iip.15':'IIP','iip.16':'IIP','iip.17':'IIP','iip.18':'IIP','iip.19':'IIP','iip.20':'IIP',
-           'iip.21':'IIP','iip.22':'IIP','iip.23':'IIP','iip.24':'IIP',
-           'iin.01':'IIn','iin.02':'IIn',
-           },
-           # For simulations containing only Type Ib/c sub-types
-           'ibc':{
-           'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.05':'Ib','ib.06':'Ib','ib.07':'Ib',
-           'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic','ic.04':'Ic','ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic',
-           },
-           # For simulations containing all CC SN sub-types
-           'cc':{
-           'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.05':'Ib','ib.06':'Ib','ib.07':'Ib',
-           'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic','ic.04':'Ic','ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic',
-           'iip.01':'IIP','iip.02':'IIP','iip.03':'IIP','iip.04':'IIP','iip.05':'IIP','iip.06':'IIP','iip.07':'IIP','iip.08':'IIP','iip.09':'IIP','iip.10':'IIP',
-           'iip.11':'IIP','iip.12':'IIP','iip.13':'IIP','iip.14':'IIP','iip.15':'IIP','iip.16':'IIP','iip.17':'IIP','iip.18':'IIP','iip.19':'IIP','iip.20':'IIP',
-           'iip.21':'IIP','iip.22':'IIP','iip.23':'IIP','iip.24':'IIP',
-           'iin.01':'IIn','iin.02':'IIn',
-           } }
-
-iaSubClassDict = {
-    # 'salt2':'Ia',
-    'salt2-extended':'Ia',
-    }
-
-# Probability that a CC SN belongs to any given CC sub-class (Ib,Ic,IIP,IIL,IIn)
-# from Li et al 2011a
-ccSubClassProbs = {
+# Probability that a SN of a given type (Ia,Ibc,II) belongs to any
+# given sub-class (Ia,Ib,Ic,IIP,IIL,IIn).   from Li et al 2011a
+SubClassProbs = {
+           'ia':{'Ia':1.0 },
            # For simulations containing only Type II sub-types
            'ii':{'IIP':0.7,'IIn':0.3 },
            # For simulations containing only Type Ib/c sub-types
@@ -46,7 +18,7 @@ class SncosmoSim( object ):
     """
     def __init__(self, sntype, observations=None, z_range=[1.8,2.2],
                  t0_range=[0,0], nsim=100, perfect=True,
-                 Om=0.3, H0=70 ):
+                 Om=0.3, H0=70, templateset='NOTPSNID' ):
         """ Run a monte carlo sim using sncosmo to simulate <nsim> SNe
         of the given <sntype> over the given <z_range>.
 
@@ -60,6 +32,8 @@ class SncosmoSim( object ):
         import sncosmo
         from numpy.random import normal, uniform, choice
         import numpy as np
+        # get dictionaries of sncosmo CCSN model names and their corresponding SN sub-type
+        from .classify import SubClassDict_NOTPSNID, SubClassDict_PSNID, SubClassDict_SNANA
 
         self.sntype = sntype
         self.z_range = z_range
@@ -70,25 +44,29 @@ class SncosmoSim( object ):
             observations = mk_obstable( )
         self.observations = observations
 
+        if templateset.lower()=='psnid':
+            SubClassDict = SubClassDict_PSNID[sntype.lower()]
+        elif templateset.lower()=='snana':
+            SubClassDict = SubClassDict_SNANA[sntype.lower()]
+        elif templateset.lower()=='notpsnid':
+            SubClassDict = SubClassDict_NOTPSNID[sntype.lower()]
+
         # Make a list of all the unique sncosmo source models available,
         # and assign a relative probability that any given simulated SN of this
-        # type (CC or Ia) belongs to that subclass
-        if sntype.lower() in ['cc','ii','ibc'] :
-            subClassDict  = ccSubClassDict[sntype.lower()]
-            subClassProbs = ccSubClassProbs[sntype.lower()]
-            self.SourcenameSet = np.array( subClassDict.keys() )
-            self.SubclassSet = np.array([ subClassDict[source] for source in self.SourcenameSet ])
-            self.SubclassCount = np.array([ len(np.where(self.SubclassSet==subclass)[0])
-                                         for subclass in self.SubclassSet ], dtype=float)
-            self.SourceprobSet = np.array([ subClassProbs[subclass]
-                                          for subclass in self.SubclassSet ]) / self.SubclassCount
-            self.SourceprobSet /= self.SourceprobSet.sum()
-        elif sntype.lower()=='ia' :
-            # No sub-class divisions for SNIa
-            self.SourcenameSet = np.array(['salt2-extended'])
-            self.SubclassSet = np.array( ['Ia'] )
-            self.SourceprobSet = np.array( [1] )
-            self.SubclassCount = np.array( [1] )
+        # primary type (Ia or Ibc or II) belongs to a given model.
+        #
+        # e.g. From Li+ 2011 we have that 46% of all Type Ib/c SN are in the Ib
+        # subclass.  So if there are 10 type Ib models in our set, then each
+        # simulated Ibc supernova has a 4.6% chance of being assigned to each
+        # of the 10 Ib models.
+        subClassProbs = SubClassProbs[sntype.lower()]
+        self.SourcenameSet = np.array( SubClassDict.keys() )
+        self.SubclassSet = np.array([ SubClassDict[source] for source in self.SourcenameSet ])
+        self.SubclassCount = np.array([ len(np.where(self.SubclassSet==subclass)[0])
+                                        for subclass in self.SubclassSet ], dtype=float)
+        self.SourceprobSet = np.array([ subClassProbs[subclass]
+                                        for subclass in self.SubclassSet ]) / self.SubclassCount
+        self.SourceprobSet /= self.SourceprobSet.sum()
 
         # load the O'Donnell 1994 dust model
         self.dust = sncosmo.OD94Dust()
@@ -98,8 +76,6 @@ class SncosmoSim( object ):
                                     effect_names=['host'], effect_frames=['rest'])
                                  for source in self.SourcenameSet ])
         # Define a cosmology
-        # self.Om = Om
-        # self.H0 = H0
         self.cosmo = cosmology.FlatLambdaCDM(Om0=Om, H0=H0)
 
         # For each simulated SN, draw random Av from distributions
@@ -249,121 +225,149 @@ testsnIa = ascii.read( testsnIadat )
 testsnCC = ascii.read( testsnCCdat )
 
 
-def testClassifySNR( nsim=1000, nclass=None, outfileroot='colorColorClassify',
-                     clobber=False, verbose=True ):
+def do_classification_test( sntypelist=['Ia','Ibc','II'],
+        outfileroot='classtest',
+        # Parameters for making the obs table, giving survey parameters
+        nepochs=10, cadence=15, medbands=True,
+        bandlist=['f125w','f160w','f814w'], exptimelist=[2500.,2500.,2500.],
+        # Parameters for the simulated SN sample
+        nsim=1000, z_range=[1.5,2.5], t0_range=[10,50], fixSNR=False,
+        # Parameters for the nested sampling bayesian classifer
+        nobj=100, maxiter=10000,
+        clobber=False, verbose=True ) :
+    """  Simulate a bunch of SNe and then classify them, recording results
+    into text files.
+    """
     import cPickle
     import os
     import numpy as np
     from copy import deepcopy
-    from numpy.random import normal
-    from time import asctime
+    from numpy.random import normal, uniform
+    from time import asctime,time
+    from . import classify
 
-    if nclass is None :
-        nclass = nsim
+    t0searchrange = [t0_range[0]*0.8,t0_range[1]*1.1]
+    zsearchrange = [z_range[0]*0.8,z_range[1]*1.1]
 
-    outfileIa = outfileroot + '_Ia.dat'
-    outfileCC = outfileroot + '_CC.dat'
-    if os.path.isfile( outfileIa ) and not clobber :
-        print("%s exists. Use clobber to overwrite."%outfileIa)
-    if os.path.isfile( outfileCC ) and not clobber :
-        print("%s exists. Use clobber to overwrite."%outfileCC)
+    # Construct an observation table with the user-specified survey parameters
+    obstable = mk_obstable( nepochs=nepochs, cadence=cadence, medbands=medbands,
+                            bandlist=bandlist, exptimelist=exptimelist )
 
-    classSimIapkl = 'colorColorClassify.classSimIa.%i.pkl'%nsim
-    classSimCCpkl = 'colorColorClassify.classSimCC.%i.pkl'%nsim
+    simpicklelist = []
+    outfilelist = []
+    if isinstance( sntypelist, str ) : sntypelist = [sntypelist]
+    for sntype in sntypelist :
+        # check for existing output data files
+        outfile = outfileroot + '_%s.%i.dat'%(sntype,nsim)
+        if os.path.isfile( outfile ) and not clobber :
+            print("%s exists. Use clobber to overwrite."%outfile)
+            print( "Carrying on to the next sn type")
+            continue
 
-    if os.path.isfile( classSimIapkl ) and not clobber>1 :
-        if verbose: print("Loading Ia simulation from pickle : %s"%classSimIapkl)
-        fin = open( classSimIapkl, 'rb' )
-        classSimIa = cPickle.load( fin )
-        fin.close()
-    else :
-        if verbose: print("Running a new Ia simulation, then saving to pickle : %s"%classSimIapkl)
-        classSimIa = SncosmoSim( 'Ia' , nsim=nsim )
-        fout = open( classSimIapkl, 'wb' )
-        cPickle.dump( classSimIa, fout, protocol=-1 )
+        # Load simulated SN from pickles, if possible. Otherwise, run the simulations
+        classSimpkl = '%s.classSim%s.%i.pkl'%(outfileroot,sntype,nsim)
+        if os.path.isfile( classSimpkl ) and not clobber>1 :
+            if verbose: print("Loading %s simulation from pickle : %s"%(sntype,classSimpkl) )
+            fin = open( classSimpkl, 'rb' )
+            classSim = cPickle.load( fin )
+            fin.close()
+        else :
+            if verbose: print("Running a new %s simulation, then saving to pickle : %s"%(sntype,classSimpkl) )
+            classSim = SncosmoSim( sntype , observations=obstable, z_range=z_range,
+                                   t0_range=t0_range, nsim=nsim, perfect=fixSNR, Om=0.3, H0=70 )
+            fout = open( classSimpkl, 'wb' )
+            cPickle.dump( classSim, fout, protocol=-1 )
+            fout.close()
+        simpicklelist.append( classSim )
+
+        if verbose: print("Writing classification output to %s "%(outfile))
+
+        # erase any existing output files, and start a new version with a header
+        fout = open( outfile, 'w')
+        print >> fout, '# %s'% asctime()
+        print >> fout, '# Classifier Validation Test output generated with %s'% __file__
+        print >> fout, '# Classifying %i simulated Type %s SN'%(nsim,sntype)
+        print >> fout, '# survey: nepochs=%i ; cadence=%i; medbands=%s; '%( nepochs, cadence, medbands)
+        print >> fout, '# survey: bands=%s; exptimes=%s'%(bandlist, exptimelist )
+        print >> fout, '# nestlc: nobj=%i; maxiter=%i'%( nobj, maxiter )
+        if sntype=='Ia' :
+            print >> fout, '#index pIa  pIbc   pII     z     t0         x0     x1     c   zphot zphoterr snrmax zpost zposterr t0post t0posterr'
+        else :
+            print >> fout, '#index pIa  pIbc   pII     z     t0  amplitude       model     Av     Rv  zphot zphoterr snrmax zpost zposterr t0post t0posterr'
         fout.close()
 
-    if os.path.isfile( classSimCCpkl ) and not clobber>1 :
-        if verbose: print("Loading CC simulation from pickle : %s"%classSimCCpkl)
-        fin = open( classSimCCpkl, 'rb' )
-        classSimCC = cPickle.load(fin)
-        fin.close()
-    else :
-        if verbose: print("Running a new CC simulation, then saving to pickle : %s"%classSimCCpkl)
-        classSimCC = SncosmoSim( 'CC' , nsim=nsim )
-        fout = open( classSimCCpkl, 'wb' )
-        cPickle.dump( classSimCC, fout, protocol=-1 )
-        fout.close()
+        # Run the classifier
+        for isn in range(nsim) :
+            if verbose: print("Classifying Type %s SN %i  of  %i"%(sntype, isn+1, nsim))
+            tstart = time()
+            snlc = classSim.lightcurves[isn]
 
-    if verbose: print("Writing classification output to %s and %s "%(outfileIa, outfileCC))
+            # assign a photometric redshift
+            zphoterr = uniform( 0.05, 0.5 )
+            zphotmin  = zsearchrange[0]*1.1
+            zphotmax = zsearchrange[1]*0.9
+            zphot = classSim.z[isn] + normal( 0, zphoterr )
+            zphot = max( zphotmin, min( zphot, zphotmax) )
 
-    # erase any existing output files, and start a new version with a header line
-    foutIa = open( outfileIa, 'w')
-    print >> foutIa, '# %s'% asctime()
-    print >> foutIa, '# Med Band Classifier Validation Test output generated with %s'% __file__
-    print >> foutIa, '# Classification samples : %s  , %s '%(classSimIapkl,classSimCCpkl)
-    print >> foutIa, '# Classifying %i simulated Type Ia SN'%nclass
-    print >> foutIa, '# P(Ia|D)  S/N   z    t0   x0   x1   c  Av   Rv'
-    foutIa.close()
+            if fixSNR :
+                # Fix the S/N ratio and add appropriate noise to the perfect flux
+                snlc = deepcopy( classSim.lightcurves[isn])
+                snlc['fluxerr'] = np.abs(snlc['flux']) / fixSNR
+                snlc['flux'] = normal( snlc['flux'], snlc['fluxerr'] )
 
-    foutCC = open( outfileCC, 'w')
-    print >> foutCC, '# %s'% asctime()
-    print >> foutCC, '# Med Band Classifier Validation Test output generated with %s'% __file__
-    print >> foutCC, '# Classification samples : %s  , %s '%(classSimIapkl,classSimCCpkl)
-    print >> foutCC, '# Classifying %i simulated CC SN'%nclass
-    print >> foutCC, '# P(Ia|D)   S/N   model  z  amplitude  t0  Av   Rv'
-    foutCC.close()
+            # Skip if no points with S/N > 5
+            pIa=pIbc=pII=0
+            zout=dzout=t0out=dt0out=x0out=dx0out=x1out=dx1out=cout=dcout=0
+            ampout=dampout=ebvout=debvout=rvout=drvout=0
+            snrmax = np.abs( snlc['flux']/snlc['fluxerr'] ).max()
+            if snrmax > 5 :
+                # Run the classifier and append the result to the running output file.
+                classout = classify.classify( snlc, zhost=zphot, zhosterr=zphoterr,
+                                              t0_range=t0searchrange, zminmax=zsearchrange,
+                                              nobj=nobj, maxiter=maxiter,
+                                              templateset='PSNID', verbose=(verbose>1) )
+                pIa  = classout['pIa']
+                pIbc = classout['pIbc']
+                pII  = classout['pII']
 
-    for isn in range(nclass) :
-        if verbose: print("Classifying CCSN %i  and SNIa %i of  %i"%(isn, isn, nclass))
-        for SNR in [10,20,30]:
+                bestmodelres = classout[ classout['bestmodel']]['res']
+                bestpdf = classify.get_marginal_pdfs( bestmodelres, nbins=0, verbose=verbose>2 )
+                zout,dzout = bestpdf['z'][2],bestpdf['z'][3]
+                t0out,dt0out = bestpdf['t0'][2],bestpdf['t0'][3]
+                # if sntype=='Ia':
+                #     x0out,dx0out = bestpdf['x0'][2],bestpdf['x0'][3]
+                #     x1out,dx1out = bestpdf['x1'][2],bestpdf['x1'][3]
+                #     cout, dcout = bestpdf['c'][2],bestpdf['c'][3]
+                # else :
+                #     ampout,dampout = bestpdf['amplitude'][2],bestpdf['amplitude'][3]
+                #     ebvout,debvout = bestpdf['hostebv'][2],bestpdf['hostebv'][3]
+                #     rvout, drvout = bestpdf['hostr_v'][2],bestpdf['hostr_v'][3]
 
-            # -----------------------------------------------------------------
-            # Classify one SNIa test particle :
-            x1 = classSimIa.x1[isn]
-            c = classSimIa.c[isn]
-            dx1c = np.sqrt( (classSimIa.x1-x1)**2 + (classSimIa.c-c)**2 )
-            iNotThisx1c = np.where( dx1c>0.05 )[0]
+            if sntype == 'Ia' :
+                outline = '%4i  %4.2f  %4.2f  %4.2f  %4.2f  %4.2f  %9.3e  %5.2f    %5.2f  %5.2f  %5.2f  %5.2f  %5.2f %5.2f   %7.1f %4.1f '% (
+                        isn, pIa, pIbc, pII, classSim.z[isn],  classSim.t0[isn],
+                        classSim.x0[isn], classSim.x1[isn], classSim.c[isn], zphot, zphoterr, snrmax,
+                        zout, dzout, t0out, dt0out )#, x0out,dx0out, x1out,dx1out, cout, dcout )
+            else :
+                outline = '%4i  %4.2f  %4.2f  %4.2f  %4.2f  %4.2f  %9.3e  %10s  %5.2f  %5.2f  %5.2f  %5.2f    %5.2f %5.2f %5.2f   %7.1f %4.1f '% (
+                    isn, pIa, pIbc, pII, classSim.z[isn],  classSim.t0[isn],
+                    classSim.amplitude[isn], classSim.sourcename[isn],
+                    classSim.Av[isn], classSim.Rv[isn],
+                    zphot, zphoterr, snrmax,
+                    zout, dzout, t0out, dt0out)#, ampout,dampout, ebvout, debvout, rvout, drvout )
 
-            # Fix the S/N ratio and add appropriate noise to the perfect flux
-            testlcIa = deepcopy( classSimIa.lightcurves[isn] )
-            testlcIa['fluxerr'] = testlcIa['flux'] / SNR
-            testlcIa['flux'] = normal( testlcIa['flux'], testlcIa['fluxerr'] )
+            fout = open( outfile, 'a')
+            print >> fout, outline
+            fout.close()
 
-            # exclude from the classification set any simulated SN with (almost)
-            # the same x1 and c as our test particle
-            classSimIaLCsubset = [ classSimIa.lightcurves[inot] for inot in iNotThisx1c ]
+            tend = time()
+            if verbose>1 :
+                print( "%i : %.1f sec"%(isn,tend-tstart))
+                print("-------------------------")
+        outfilelist.append( outfile )
+        if verbose: print("Done classifying %i Type %s SN."%(nsim,sntype))
 
-            # Run the classifier and append the result to the running output file.
-            testsnIapIa = colorColorClassify( testlcIa, classSimIaLCsubset, classSimCC.lightcurves,  )
-            foutIa = open( outfileIa, 'a')
-            print >> foutIa, '%4.2f  %i  %5.3f  %7.1f   %9.3e  %5.2f  %5.2f  %5.2f  %5.2f'%(
-                testsnIapIa, SNR, classSimIa.z[isn],  classSimIa.t0[isn],
-                classSimIa.x0[isn], classSimIa.x1[isn], classSimIa.c[isn],
-                classSimIa.Av[isn], classSimIa.Rv[isn] )
-            foutIa.close()
-
-            # -----------------------------------------------------------------
-            # Classify one CCSN, excluding from the classification set any
-            #  simulated SN using the same CC model
-            testlcCC = deepcopy( classSimCC.lightcurves[isn] )
-            testlcCC['fluxerr'] = testlcCC['flux'] / SNR
-            testlcCC['flux'] = normal( testlcCC['flux'], testlcCC['fluxerr'] )
-            sourcename = classSimCC.sourcename[isn]
-            iNotThisSource = np.where( classSimCC.sourcename != sourcename )[0]
-            classSimCCLCsubset = [ classSimCC.lightcurves[inot] for inot in iNotThisSource ]
-            testsnCCpIa = colorColorClassify( testlcCC, classSimIa.lightcurves, classSimCCLCsubset )
-
-            # Append the classification result to the running output file.
-            foutCC = open( outfileCC, 'a')
-            print >> foutCC, '%4.2f  %i  %9s  %5.3f  %9.3e  %7.1f  %5.2f  %5.2f'%(
-                testsnCCpIa, SNR, classSimCC.sourcename[isn], classSimCC.z[isn],
-                classSimCC.amplitude[isn], classSimCC.t0[isn],
-                classSimCC.Av[isn], classSimCC.Rv[isn] )
-            foutCC.close()
-    if verbose: print("Done classifying %i SN of each class."%(nclass))
-
-    return( outfileIa, outfileCC )
+    return( simpicklelist, outfilelist )
 
 def plotSNRtest01( datfileIa='colorColorClassify_Ia.dat',
                    datfileCC='colorColorClassify_CC.dat' ) :
@@ -542,42 +546,54 @@ def plotSNRtest02( datfileIa='colorColorClassify_Ia.dat',
     pl.draw()
 
 
-def testClassify100():
+def testClassify( nsim=100 ):
     from . import classify
-    simIalist = [ SncosmoSim( 'Ia', nsim=100 ) for i in range(10) ]
-    simCClist = [ SncosmoSim( 'Ia', nsim=100 ) for i in range(10) ]
+    simIa = SncosmoSim( 'Ia', nsim=nsim )
+    simIbc = SncosmoSim( 'Ibc', nsim=nsim )
+    simII = SncosmoSim( 'II', nsim=nsim )
+
     pIaArrayLog = []
     pIaArray = []
-    for i in range(10) :
-        simIa = simIalist[i]
-        for j in range(10) :
-            simCC = simCClist[j]
-            pIaArrayLog.append( colorColorClassifyLogLike( testsnIa, simIa, simCC ) )
-            pIaArray.append( colorColorClassify( testsnIa, simIa, simCC ) )
-    return( pIaArrayLog, pIaArray )
+    for simset in [simIa, simIbc, simII ] :
+        for simsn in simset :
+            classout = classify.classify( simsn )
+
+    return( )
 
 
-def mk_obstable( nepochs=10, cadence=10,
-                 bandlist=['f105w','f125w','f160w'],
+def mk_obstable( nepochs=10, cadence=15, medbands=True,
+                 bandlist=['f125w','f160w','f814w'],
                  exptimelist=[2500.,2500.,2500.]  ):
     """ construct a table of observations for simulating supernovae with sncosmo
     :param exptime:
     :return:
     """
 
-    from sncosmost.simparam import gethstzp, gethstbgnoise
+    from simparam import gethstzp, gethstbgnoise
     import numpy as np
     from astropy.table import Table
 
     epochlist = range(0,nepochs+1)
+
+    camlist = [ 'WFC3IR' if b.lower().startswith('f1') else 'ACSWFC' for b in bandlist ]
+
     band = np.ravel( [ bandlist for epoch in epochlist ])
     exptime = np.ravel( [ exptimelist for epoch in epochlist ] )
     time = np.ravel( [ [cadence*epoch for b in bandlist] for epoch in epochlist ] )
-    zp = np.ravel( [ [gethstzp(b) for b in bandlist] for epoch in epochlist ] )
+    zp = np.ravel( [ [gethstzp(b,'ab',c) for b,c in zip(bandlist,camlist)] for epoch in epochlist ] )
     zpsys = np.ravel( [ ['ab' for b in bandlist] for epoch in epochlist ] )
 
-    gain = np.ravel( [[ et for et in exptimelist] for epoch in epochlist ] )
-    bgnoise = np.ravel( [ [ gethstbgnoise( b, et ) for b,et in zip(bandlist,exptimelist) ] for epoch in epochlist ] )
+    if medbands :
+        # add a single epoch of med band data, 3 filters, with 3 orbits per filter
+        medbandlist = ['F127M','F139M', 'F153M']
+        band = np.append( band, medbandlist  )
+        exptime = np.append( exptime, np.ones(3) * (3*2500) )  # 3 orbits for each med band to get S/N~10 at z=2-2.5
+        time = np.append( time, np.ones(3) * int(cadence*nepochs/3) )
+        zp = np.append( zp,  [ gethstzp(b) for b in medbandlist ] )
+        zpsys = np.append( zpsys, [ 'ab' for b in medbandlist ] )
+
+    gain = exptime
+    bgnoise = np.array( [ gethstbgnoise( b.lower(), et, 'WFC3IR' if b.lower().startswith('f1') else 'ACSWFC' ) for b,et in zip(band,exptime) ] )
 
     observations = Table({'band': band, 'time': time, 'zp': zp,
                           'zpsys': zpsys, 'gain': gain, 'exptime':exptime,
