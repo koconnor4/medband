@@ -11,7 +11,7 @@ SubClassDict_SNANA = {
                'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.05':'Ib','ib.06':'Ib','ib.07':'Ib',
                'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic','ic.04':'Ic','ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic',
                },
-           'ia': {'salt2-extended':'Ia'},
+           'ia': {'salt2':'Ia'},
 }
 
 
@@ -32,7 +32,7 @@ SubClassDict_NOTPSNID = {
                'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.07':'Ib', # 'ib.05':'Ib' 'ib.06':'Ib',
                'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic', 'ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic', # 'ic.04':'Ic'
                },
-           'ia': {'salt2-extended':'Ia'},
+           'ia': {'salt2':'Ia'},
 }
 
 
@@ -513,3 +513,93 @@ def classify( sn, zhost=1., zhosterr=1., t0_range=None, zminmax=[0.1,2.8],
     outdict['logzall'] = logzall
 
     return( outdict )
+
+
+
+def medbandClassTestStone( sfxlist=['J','H','JNH','WIDE','MB','MBJ','MBH','MBIR','ALL'],
+                           templateset='SNANA', usehostprior=False):
+    """  Run the classifier on a series of versions of the SN light curve
+    holding a subset of the data.
+    :param sn: name of the SN to evaluate
+    :return:
+    for sfx in  :
+
+    """
+
+    outdictlist = []
+    for sfx in sfxlist :
+        datfile = 'HST_CANDELS4_stone%s.sncosmo.dat'%(sfx)
+        sn = ascii.read( datfile, format='commented_header', header_start=-1, data_start=0 )
+        if usehostprior :
+            outdict = classify( sn,  zhost=1.8, zhosterr=0.02, t0_range=[56460,56500],zminmax=[1.7,1.9], verbose=False, templateset=templateset )
+            fout = open('stone_classtest_withHostPrior.dat','a')
+        else :
+            outdict = classify( sn,  zhost=2.0, zhosterr=0.8, zminmax=[1.2,2.8], t0_range=[56460,56500], verbose=False, templateset=templateset )
+            fout = open('stone_classtest_noHostPrior.dat','a')
+        print >> fout, 'stone %s : PIa=%.3e'%(sfx, outdict['pIa'])
+        fout.close()
+
+        outdictlist.append( outdict )
+    return( outdictlist )
+
+
+
+
+def medbandClassTestColfax( sfxlist=['J','H','JNH','WIDE','MB','MBJ','MBH','MBIR','ALL'],
+                           templateset='SNANA', usehostprior=True):
+    """  Run the classifier on a series of versions of the SN light curve
+    holding a subset of the data.
+    :param sn: name of the SN to evaluate
+    :return:
+    for sfx in  :
+
+    """
+
+    outdictlist = []
+    for sfx in sfxlist :
+        datfile = 'HST_CANDELS4_colfax%s.sncosmo.dat'%(sfx)
+        sn = ascii.read( datfile, format='commented_header', header_start=-1, data_start=0 )
+        if usehostprior :
+            outdict = classify( sn,  zhost=2.26, zhosterr=0.09, zminmax=[1.8,2.6], t0_range=[56055,56095], verbose=False, templateset=templateset )
+            fout = open('colfax_classtest_withHostPrior.dat','a')
+        else :
+            outdict = classify( sn,  zhost=2.0, zhosterr=0.8, zminmax=[1.2,2.8], t0_range=[56055,56095], verbose=False, templateset=templateset )
+            fout = open('colfax_classtest_noHostPrior.dat','a')
+        print >> fout, 'colfax %s : PIa=%.3e'%(sfx, outdict['pIa'])
+        fout.close()
+
+        outdictlist.append( outdict )
+    return( outdictlist )
+
+
+
+def medbandClassTestBush( sfxlist=['J','H','IR','WIDE','MB','MBJ','MBH','MBIR','ALL'],
+                           templateset='SNANA', usehostprior=False):
+    """  Run the classifier on a series of versions of the SN light curve
+    holding a subset of the data.
+    :param sn: name of the SN to evaluate
+    :return:
+    for sfx in  :
+
+    """
+
+    outdictlist = []
+    for sfx in sfxlist :
+        datfile = 'HST_CANDELS4_bush%s.sncosmo.dat'%(sfx)
+        sn = ascii.read( datfile, format='commented_header', header_start=-1, data_start=0 )
+        if usehostprior :
+            outdict = classify( sn,  zhost=1.15, zhosterr=0.4, t0_range=[55760,55840],zminmax=[0.7,1.6], verbose=False, templateset=templateset )
+            fout = open('bush_classtest_withHostPrior.dat','a')
+        else :
+            outdict = classify( sn,  zhost=1.5, zhosterr=1.0, zminmax=[0.5,2.0], t0_range=[55760,55840], verbose=False, templateset=templateset )
+            fout = open('bush_classtest_noHostPrior.dat','a')
+        print >> fout, 'bush %s : PIa=%.3e'%(sfx, outdict['pIa'])
+        fout.close()
+
+        outdictlist.append( outdict )
+    return( outdictlist )
+
+
+
+
+
