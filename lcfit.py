@@ -388,7 +388,7 @@ def plot_light_curve_fit_from_SNANA( snid='colfax', plotmags=False ) :
     colordict = { 'H':'k', 'J':cp.darkgold, 'Y':cp.cadetblue,
                   'N':cp.darkgreen, 'V':cp.coral }
 
-    fluxdat = ascii.read( 'HSThighz-%s.LCPLOT.TEXT'%snid )
+    fluxdat = ascii.read( 'CANDELs-%s.LCPLOT.TEXT'%snid )
     name = fluxdat['col1']
     mjd = fluxdat['col2']
     tobs = fluxdat['col3']
