@@ -1,27 +1,50 @@
 
 # Dictionary of sncosmo CCSN model names and their corresponding SN sub-type
-ccSubClassDict = {
-           # For simulations containing only Type II sub-types
-           'ii':{
-           'iip.01':'IIP','iip.02':'IIP','iip.03':'IIP','iip.04':'IIP','iip.05':'IIP','iip.06':'IIP','iip.07':'IIP','iip.08':'IIP','iip.09':'IIP','iip.10':'IIP',
-           'iip.11':'IIP','iip.12':'IIP','iip.13':'IIP','iip.14':'IIP','iip.15':'IIP','iip.16':'IIP','iip.17':'IIP','iip.18':'IIP','iip.19':'IIP','iip.20':'IIP',
-           'iip.21':'IIP','iip.22':'IIP','iip.23':'IIP','iip.24':'IIP',
-           'iin.01':'IIn','iin.02':'IIn',
-           },
-           # For simulations containing only Type Ib/c sub-types
-           'ibc':{
-           'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.05':'Ib','ib.06':'Ib','ib.07':'Ib',
-           'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic','ic.04':'Ic','ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic',
-           },
-           # For simulations containing all CC SN sub-types
-           'cc':{
-           'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.05':'Ib','ib.06':'Ib','ib.07':'Ib',
-           'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic','ic.04':'Ic','ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic',
-           'iip.01':'IIP','iip.02':'IIP','iip.03':'IIP','iip.04':'IIP','iip.05':'IIP','iip.06':'IIP','iip.07':'IIP','iip.08':'IIP','iip.09':'IIP','iip.10':'IIP',
-           'iip.11':'IIP','iip.12':'IIP','iip.13':'IIP','iip.14':'IIP','iip.15':'IIP','iip.16':'IIP','iip.17':'IIP','iip.18':'IIP','iip.19':'IIP','iip.20':'IIP',
-           'iip.21':'IIP','iip.22':'IIP','iip.23':'IIP','iip.24':'IIP',
-           'iin.01':'IIn','iin.02':'IIn',
-           } }
+ccSubClassDict = {  'ii':{    'snana-2007ms':'IIP',  # sdss017458 (Ic in SNANA)
+                              'snana-2004hx':'IIP',  # sdss000018 PSNID
+                              'snana-2005gi':'IIP',  # sdss003818 PSNID
+                              'snana-2006gq':'IIP',  # sdss013376
+                              'snana-2006kn':'IIP',  # sdss014450
+                              'snana-2006jl':'IIP',  # sdss014599 PSNID
+                              'snana-2006iw':'IIP',  # sdss015031
+                              'snana-2006kv':'IIP',  # sdss015320
+                              'snana-2006ns':'IIP',  # sdss015339
+                              'snana-2007iz':'IIP',  # sdss017564
+                              'snana-2007nr':'IIP',  # sdss017862
+                              'snana-2007kw':'IIP',  # sdss018109
+                              'snana-2007ky':'IIP',  # sdss018297
+                              'snana-2007lj':'IIP',  # sdss018408
+                              'snana-2007lb':'IIP',  # sdss018441
+                              'snana-2007ll':'IIP',  # sdss018457
+                              'snana-2007nw':'IIP',  # sdss018590
+                              'snana-2007ld':'IIP',  # sdss018596
+                              'snana-2007md':'IIP',  # sdss018700
+                              'snana-2007lz':'IIP',  # sdss018713
+                              'snana-2007lx':'IIP',  # sdss018734
+                              'snana-2007og':'IIP',  # sdss018793
+                              'snana-2007ny':'IIP',  # sdss018834
+                              'snana-2007nv':'IIP',  # sdss018892
+                              'snana-2007pg':'IIP',  # sdss020038
+                              'snana-2006ez':'IIn',  # sdss012842
+                              'snana-2006ix':'IIn',  # sdss013449
+                              },
+                    'ibc':{    'snana-2004fe':'Ic',
+                               'snana-2004gq':'Ic',
+                               'snana-sdss004012':'Ic',  # no IAU ID
+                               'snana-2006fo':'Ic',      # sdss013195 PSNID
+                               'snana-sdss014475':'Ic',  # no IAU ID
+                               'snana-2006lc':'Ic',      # sdss015475
+                               'snana-04d1la':'Ic',
+                               'snana-04d4jv':'Ic',
+                               'snana-2004gv':'Ib',
+                               'snana-2006ep':'Ib',
+                               'snana-2007y':'Ib',
+                               'snana-2004ib':'Ib',   # sdss000020
+                               'snana-2005hm':'Ib',   # sdss002744 PSNID
+                               'snana-2006jo':'Ib',   # sdss014492 PSNID
+                               'snana-2007nc':'Ib',   # sdss019323
+                               },
+                    }
 
 iaSubClassDict = {
     # 'salt2':'Ia',
@@ -67,7 +90,9 @@ class SncosmoSim( object ):
         self.perfect = perfect
 
         if observations is None :
-            observations = mkobservationsTable( filterset=filterset )
+            if self.perfect : orbits=1000
+            else : orbits=10
+            observations = mkobservationsTable(filterset=filterset, orbits=orbits)
         self.observations = observations
 
         # Make a list of all the unique sncosmo source models available,
@@ -85,7 +110,7 @@ class SncosmoSim( object ):
             self.SourceprobSet /= self.SourceprobSet.sum()
         elif sntype.lower()=='ia' :
             # No sub-class divisions for SNIa
-            self.SourcenameSet = np.array(['salt2-extended'])
+            self.SourcenameSet = np.array(['salt2'])
             self.SubclassSet = np.array( ['Ia'] )
             self.SourceprobSet = np.array( [1] )
             self.SubclassCount = np.array( [1] )
@@ -200,7 +225,7 @@ class SncosmoSim( object ):
 
             # Generate one simulated SN:
             snlc = sncosmo.realize_lcs(self.observations, model, [ modelparams ],
-                                       thresh=None, perfect=perfect )
+                                       thresh=None )
             lightcurvelist.append( snlc[0] )
 
         self.lightcurves = lightcurvelist
@@ -386,7 +411,7 @@ def plotSNRtest01( datfileIa='colorColorClassify_Ia.dat',
     zCC = datCC['z']
     SNRCC = datCC['S/N']
 
-    fig1 = plotsetup.fullpaperfig( 1, figsize=[8,3])
+    fig1 = plotsetup.fullpaperfig( figsize=[8,3])
     SNRlist = np.unique( SNRIa )
     ncol = len(SNRlist)
     icol=0
@@ -710,7 +735,7 @@ def colorColorClassify( sn=testsnIa, simIa=None, simCC=None,
     return( pIa )
 
 def mkobservationsTable( filterset='hst', orbits=10.  ):
-    from sncosmost.simparam import gethstzp, gethstbgnoise
+    from .simparam import gethstzp, gethstbgnoise
     import numpy as np
     from astropy.table import Table
 

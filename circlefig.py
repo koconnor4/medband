@@ -17,11 +17,11 @@ class supernova( object ):
         self.t0err = 3
 
     @property
-    def t0_range( self ):
+    def tobs_range( self ):
         return( [ self.mjdmedband-self.mjdpk-self.t0err,self.mjdmedband-self.mjdpk+self.t0err ] )
 
     @property
-    def t0( self ):
+    def tobs( self ):
         return( self.mjdmedband-self.mjdpk )
 
 DEMO = supernova('demo')
@@ -45,20 +45,20 @@ JWST3.z_range = [2.6, 3.4]
 STONE = supernova('stone')
 STONE.mjdpk = 56482.
 STONE.mjdmedband = 56475.
-STONE.z_range = [1.6, 2.2]
+STONE.z_range = [1.6, 2.4]
 STONE.mag = { # from idl5 psf fitting
-            'f139m':25.375,
-            'f140w':25.344, # 25.349, # <- from fit.
+            'f139m':25.420,
+            'f140w':25.351, # 25.349, # <- from fit.
             #'f140w':25.344,
-            'f153m':25.464,
-            'f160w':25.233, # 25.354, # <- from fit.
+            'f153m':25.429,
+            'f160w':25.227, # 25.354, # <- from fit.
             #'f160w':25.233,
             }
 STONE.magerr = { # from drop method
-            'f139m':0.248,
-            'f140w':0.155, # 0.01, # <- from fit.
-            'f153m':0.188,
-            'f160w':0.08, # 0.01, # <- from fit.
+            'f139m':0.204,
+            'f140w':0.122, # 0.01, # <- from fit.
+            'f153m':0.164,
+            'f160w':0.084, # 0.01, # <- from fit.
             }
 
 COLFAX = supernova('colfax')
@@ -172,7 +172,8 @@ def sncosmo_sim( snroot='demo', filterset='hst',
         fin.close()
     else :
         if verbose: print("Running a new II simulation, then saving to pickle : %s"%simIIpkl)
-        simII = medband_classtest.SncosmoSim( 'II' , z_range=z_range, t0_range=t0_range, nsim=nsim, filterset=filterset )
+        simII = medband_classtest.SncosmoSim( 'II' , z_range=z_range,#[0]*0.5,z_range[1]],
+                                              t0_range=t0_range, nsim=nsim, filterset=filterset )
         fout = open( simIIpkl, 'wb' )
         cPickle.dump( simII, fout, protocol=-1 )
         fout.close()
@@ -184,7 +185,8 @@ def sncosmo_sim( snroot='demo', filterset='hst',
         fin.close()
     else :
         if verbose: print("Running a new Ibc simulation, then saving to pickle : %s"%simIbcpkl)
-        simIbc = medband_classtest.SncosmoSim( 'Ibc' , z_range=z_range, t0_range=t0_range, nsim=nsim, filterset=filterset )
+        simIbc = medband_classtest.SncosmoSim( 'Ibc' , z_range=z_range,#[0]*0.5,z_range[1]],
+                                               t0_range=t0_range, nsim=nsim, filterset=filterset )
         fout = open( simIbcpkl, 'wb' )
         cPickle.dump( simIbc, fout, protocol=-1 )
         fout.close()
@@ -318,13 +320,13 @@ def plotpoints( sim1, sim2, sim3=None, medbandx='f127m', medbandy='f139m', **plo
 
 
 
-def plot_redshift_circle(z_range=[1.8,2.2], t0=0,
+def plot_redshift_circle(z_range=[1.8,2.2], tobs=0,
                          medbandx='f139m', medbandy='f127m',
                          source='salt2', coloredaxislabels=True, **plotargs ):
     """  plot a color-color circle showing how the position of a SNIa in
     color-color space changes with redshift, using markers color-coded by z.
     :param z_range:
-    :param t0:
+    :param tobs:
     :param medbandx:
     :param medbandy:
     :param source:
@@ -334,18 +336,26 @@ def plot_redshift_circle(z_range=[1.8,2.2], t0=0,
     """
     from mpltools import color
     from matplotlib import cm
+    from copy import copy
 
-    zsteps = np.arange( z_range[0], z_range[1], 0.01 )
+    plotargs10 = copy(plotargs)
+    plotargs10.update( mec='w', marker='D', zorder=1000, ms=10 )
+
+    zsteps = np.arange( z_range[0], z_range[1]+0.01, 0.01 )
     color.cycle_cmap( length=len(zsteps), cmap=cm.jet )
     for z in zsteps :
         sn = sncosmo.Model( source=source )
-        sn.set( z=z, t0=t0 )
+        sn.set( z=z, t0=0 )
         widebandx = medband_matching_filter(medbandx)
         widebandy = medband_matching_filter(medbandy)
 
-        colorx = sn.bandmag(medbandx, 'ab', t0) - sn.bandmag(widebandx, 'ab', t0)
-        colory = sn.bandmag(medbandy, 'ab', t0) - sn.bandmag(widebandy, 'ab', t0)
-        pl.plot( colorx, colory, **plotargs )
+        colorx = sn.bandmag(medbandx, 'ab', tobs) - sn.bandmag(widebandx, 'ab', tobs)
+        colory = sn.bandmag(medbandy, 'ab', tobs) - sn.bandmag(widebandy, 'ab', tobs)
+
+        if (int(np.round(z*100))%10) == 0 :
+            pl.plot( colorx, colory, **plotargs10 )
+        else :
+            pl.plot( colorx, colory, **plotargs )
 
 
     ax = pl.gca()
@@ -355,7 +365,7 @@ def plot_redshift_circle(z_range=[1.8,2.2], t0=0,
 
 def singlecircle( sn=None, sim1=None, sim2=None, sim3=None,
                   medbandx='f139m', medbandy='f153m',
-                  contours=True, redshiftcircle=True,
+                  contours=True, points=False, redshiftcircle=True,
                   clobber=False, filterset='hst', nsim=2000, **plotargs ) :
     """  make a single color-color circle diagram from sncosmo monte carlo sims.
     :param sn:
@@ -382,19 +392,20 @@ def singlecircle( sn=None, sim1=None, sim2=None, sim3=None,
     elif sn == 'demo' or sn=='none' or sn is None :
         sndat = DEMO
 
-    if sim1 is None :
-        sim1, sim2, sim3 = sncosmo_sim( snroot = sndat.name,
-                                        z_range= sndat.z_range,
-                                        t0_range=sndat.t0_range, nsim=nsim,
-                                        clobber=clobber, filterset=filterset )
+    if contours or points :
+        if sim1 is None :
+            sim1, sim2, sim3 = sncosmo_sim( snroot = sndat.name,
+                                            z_range= sndat.z_range,
+                                            t0_range=sndat.tobs_range, nsim=nsim,
+                                            clobber=clobber, filterset=filterset )
 
-    if contours :
-        plotcontours( sim1, sim2, sim3, medbandx=medbandx, medbandy=medbandy, **plotargs )
-    else :
-        plotpoints( sim1, sim2, sim3, medbandx=medbandx, medbandy=medbandy, **plotargs )
+        if contours :
+            plotcontours( sim1, sim2, sim3, medbandx=medbandx, medbandy=medbandy, **plotargs )
+        elif points :
+            plotpoints( sim1, sim2, sim3, medbandx=medbandx, medbandy=medbandy, **plotargs )
 
     if redshiftcircle :
-        plot_redshift_circle(z_range=sndat.z_range, t0=sndat.t0,
+        plot_redshift_circle(z_range=sndat.z_range, tobs=sndat.tobs,
                              medbandx=medbandx, medbandy=medbandy,
                              marker='o' )
 
@@ -413,13 +424,14 @@ def singlecircle( sn=None, sim1=None, sim2=None, sim3=None,
         ax = pl.gca()
         ax.errorbar( deltasnmagx, deltasnmagy,
                      deltasnmagerrx, deltasnmagerry,
-                     marker='D', ms=10, elinewidth=2, capsize=0,
-                     color='k' )
+                     marker='s', ms=10, elinewidth=2, capsize=0,
+                     color='k', mec='w' )
 
     pl.draw()
     if sim3 is not None :
         return sim1, sim2, sim3
-    return sim1,sim2
+    if sim1 is not None :
+        return sim1,sim2
 
 
 
@@ -502,22 +514,50 @@ def sixcircles( sn='bush', sim1=None, sim2=None, sim3=None,
 def stonefig( simIa=None, simIbc=None, simII=None, contours=True, redshiftcircle=True,
               clobber=False, **plotargs ):
     from pytools import plotsetup
-    fig = plotsetup.halfpaperfig(3,[4,4])
+    from mpltools import color
+    from matplotlib import cm
+    fig = plotsetup.fullpaperfig(figsize=[7.5,3.5])
+    fig.clf()
 
+    ax1 = fig.add_subplot(1,2,1)
     simIa, simIbc, simII = singlecircle( 'stone', simIa, simIbc, simII,
                                          clobber=clobber,
                                          medbandx='f139m', medbandy='f153m',
-                                         contours=contours, redshiftcircle=redshiftcircle,
+                                         contours=contours, redshiftcircle=False, #redshiftcircle,
                                          **plotargs )
-    fig = pl.gcf()
-    ax = pl.gca()
-    fig.subplots_adjust( left=0.18, bottom=0.12, right=0.95, top=0.95, wspace=0.1 )
+    fig.subplots_adjust( left=0.10, bottom=0.15, right=0.92, top=0.98, wspace=0.0 )
 
-    ax.set_xlim( -0.35, 0.35 )
-    ax.set_ylim( -0.3, 0.45 )
+    ax1 = pl.gca()
 
-    ax.text(  0.95, 0.95, 'GND13Sto' , transform=ax.transAxes,
-               ha='right',va='top', color='k',fontsize=15,)
+    ax1.text(  0.05, 0.95, 'GND13Sto' , transform=ax1.transAxes,
+               ha='left',va='top', color='k',fontsize=15,)
+
+    ax2 = fig.add_subplot(1,2,2, sharex=ax1, sharey=ax1)
+    singlecircle( 'stone', medbandx='f139m', medbandy='f153m',
+                  contours=False, points=False, redshiftcircle=True, **plotargs )
+
+
+    #plot_redshift_circle(z_range=STONE.z_range, tobs=STONE.tobs,
+    #                     medbandx='f139m', medbandy='f153m',
+    #                     source='salt2', coloredaxislabels=False, marker='o' )
+    ax2.yaxis.set_label_position('right')
+    ax2.yaxis.set_ticks_position('right')
+    ax2.yaxis.set_ticks_position('both')
+    pl.setp( ax2.yaxis.get_label(), rotation=-90 )
+
+    colorlist = color.colors_from_cmap( 9, cm.jet )
+    ax2.text( 0.1,-0.15,'z=1.6',ha='left',va='top', color=colorlist[0])
+    ax2.text( -0.06,-0.18,'1.7',ha='left',va='top', color=colorlist[1])
+    ax2.text( 0.26,0.06,'1.8',ha='left',va='top', color=colorlist[2])
+    ax2.text( 0.14,0.0,'1.9',ha='left',va='top', color='darkcyan')
+    ax2.text( -0.1,-0.19,'2.0',ha='right',va='top', color='limegreen')
+    ax2.text( -0.09,0.23,'2.1',ha='right',va='bottom', color='darkolivegreen')
+    ax2.text( 0.13,0.27,'2.2',ha='left',va='top', color=colorlist[6])
+    ax2.text( -0.1,-0.07,'2.3',ha='center',va='center', color=colorlist[7])
+    ax2.text( -0.23,-0.14,'z=2.4',ha='right',va='bottom', color=colorlist[8])
+
+    ax1.set_xlim( -0.35, 0.35 )
+    ax1.set_ylim( -0.3, 0.45 )
 
     pl.draw()
     return simIa, simIbc, simII
@@ -527,6 +567,8 @@ def colfaxfig( simIa=None, simIbc=None, simII=None, contours=True, redshiftcircl
                clobber=False, **plotargs ):
     from pytools import plotsetup
     from matplotlib import pyplot as pl
+    from mpltools import color
+    from matplotlib import cm
     fig = plotsetup.fullpaperfig([8,4])
 
     simIa, simIbc, simII = doublecircle( 'colfax', simIa, simIbc, simII,
@@ -546,6 +588,11 @@ def colfaxfig( simIa=None, simIbc=None, simII=None, contours=True, redshiftcircl
     ax2.text(  0.95, 0.95, 'GND12Col' , transform=ax2.transAxes,
                ha='right',va='top', color='k',fontsize=15,)
     ax2.yaxis.labelpad=20
+
+    colorlist = color.colors_from_cmap( 2, cm.jet )
+    ax1.text( 0.15,0.17,'z=1.9',ha='left',va='top', color=colorlist[0])
+    ax1.text( -0.23,0.32,'z=2.4',ha='left',va='top', color=colorlist[1])
+
 
     pl.draw()
 
