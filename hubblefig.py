@@ -1,7 +1,7 @@
 from pylab import *
 from numpy import *
 
-def gethubbledat( datfile='union2.dat') :
+def gethubbledat( datfile='ps1union.dat') :
     from astropy.io import ascii
     from astropy.table import Table
     from pytools import cosmo
@@ -14,7 +14,7 @@ def gethubbledat( datfile='union2.dat') :
         if 'ipython' in thisfile :
             thisfile = __file__
         thisdir = os.path.dirname( thisfile )
-        datfile = os.path.join( thisdir, datfile )
+        datfile = os.path.join( thisdir, os.path.basename(datfile) )
     if not os.path.isfile( datfile ):
         raise exceptions.RuntimeError("No such file %s"%datfile)
 
@@ -36,7 +36,7 @@ def gethubbledat( datfile='union2.dat') :
         #MB = -19.363
 
         H0 = 70.88
-        Om = 0.272
+        Om = 0.284
         MB = -19.34
         alpha=0.147
         beta=3.13
@@ -60,6 +60,7 @@ def gethubbledat( datfile='union2.dat') :
         hubbledatgood['name'] = hubbledat['CID'][igood]
         # hubbledatgood['mu'] = hubbledat['MU'][igood]
         # hubbledatgood['mures'] = hubbledat['MURES'][igood]
+        hubbledatgood['mb'] = hubbledat['mB'][igood]
         hubbledatgood['mberr'] = hubbledat['mBERR'][igood]
         hubbledatgood['x1err'] = hubbledat['x1ERR'][igood]
         hubbledatgood['cerr'] = hubbledat['cERR'][igood]
@@ -221,7 +222,6 @@ def mkresidplot( datfile='ps1union.dat', ageaxis=True,
     """
     from pytools import plotsetup, cosmo, colorpalette as cp
     from matplotlib import patches
-    from astropy.io import ascii
     import numpy as np
     from matplotlib import pyplot as pl
     from scipy.interpolate import interp1d
@@ -245,7 +245,6 @@ def mkresidplot( datfile='ps1union.dat', ageaxis=True,
         bottomAxeslim = [ 0.13, 0.18, 0.85, 0.65 ]
     else :
         bottomAxeslim = [ 0.09, 0.12, 0.88, 0.75 ]
-
 
     ax1 = fig.add_axes( bottomAxeslim, frameon=True, alpha=0.0, label='axes1')
     ax1top = ax1.twiny()
@@ -277,7 +276,7 @@ def mkresidplot( datfile='ps1union.dat', ageaxis=True,
 
         ax1.errorbar( hubbledat['z'][isurvey], hubbledat['mures'][isurvey],
                       hubbledat['muerr'][isurvey], hubbledat['zerr'][isurvey],
-                      marker='o', ls=' ',mew=0, markersize=5,
+                      marker='o', ls=' ',mew=0.01, markersize=5,
                       color=colordict[survey], mfc=colordict[survey],
                       ecolor=colordict[survey],
                       elinewidth=elw, capsize=cs, alpha=0.7 )
@@ -312,18 +311,28 @@ def mkresidplot( datfile='ps1union.dat', ageaxis=True,
                               mucol([2.16,2.19,2.21,2.24,2.26,2.28]),
                               color=color, lw=0.75, ls='-' )
                     ax1.errorbar( 2.26, mucol(2.26), muerr,
-                                  marker='D', ls=' ',mew=0, markersize=8,
+                                  marker='D', ls=' ',mew=0.01, markersize=8,
                                   color=color, mfc=color, ecolor=color,
                                   elinewidth=elw, capsize=cs, alpha=1 )
                     z = 2.26
                     mu = mucol(2.26)
+                elif name=='stone' :
+                    # not applying a lensing correction for stone:
+                    #  mu = mu + 0.0215;  muerr = np.sqrt( muerr**2 + 0.02**2 )
+                    isto = np.where( [n.startswith('stone') for n in hubbledat['name']] )[0]
+                    musto = interp1d( hubbledat['z'][isto], hubbledat['mures'][isto] )
+                    ax1.plot( np.arange(1.66,2.01,0.02),
+                              musto(np.arange(1.66,2.01,0.02)),
+                              color=color, lw=0.75, ls='--' )
+                    ax1.errorbar( 1.80, musto(1.80), muerr, zerr,
+                                  marker='D', ls=' ',mew=0.01, markersize=8,
+                                  color=color, mfc=color, ecolor=color,
+                                  elinewidth=elw, capsize=cs, alpha=1 )
+                    z = 1.80
+                    mu = musto(1.80)
                 else :
-                    # Not applying a lensing correction for Stone
-                    #if name=='stone':
-                    #    mu = mu + 0.0215
-                    #    muerr = np.sqrt( muerr**2 + 0.02**2 )
                     ax1.errorbar( z, mu, muerr, zerr,
-                                  marker='D', ls=' ',mew=0, markersize=8,
+                                  marker='D', ls=' ',mew=0.01, markersize=8,
                                   color=color, mfc=color, ecolor=color,
                                   elinewidth=elw, capsize=cs, alpha=1 )
 
@@ -349,7 +358,7 @@ def mkresidplot( datfile='ps1union.dat', ageaxis=True,
     #muextremeDE = cosmo.mu( z, H0=_H0, Om=_Om, Ode=(1-_Om), w0=-0.7, wa=-2)
     mu1 = cosmo.mu( zLCDM, H0=H0, Om=Om-0.015, Ode=(1-Om+0.015), w0=-1.2, wa=0.7)
     mu2 = cosmo.mu( zLCDM, H0=H0, Om=Om+0.055, Ode=(1-Om-0.055), w0=-0.65, wa=-2.2)
-    ax1.fill_between( zLCDM, mu1-muLCDM, mu2-muLCDM, color='k', alpha=0.2, lw=0, zorder=10 )
+    ax1.fill_between( zLCDM, mu1-muLCDM, mu2-muLCDM, color='k', alpha=0.2, lw=0.01, zorder=10 )
 
     if not presfig :
         ax1.text( 0.08, -0.8,  'low-z',    fontsize=(presfig and 'small') or 10.5, ha='center', color=colordict['low-z']     )
