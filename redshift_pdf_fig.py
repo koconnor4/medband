@@ -34,6 +34,25 @@ def do_colfax_fit( nbins=51 ):
     return( colfaxMBout, colfaxWBout, colfaxALLout )
 
 
+
+def mk_stone_redshift_prior():
+    """  Define a redshift prior for SN stone by adding together a
+    set of redshift constraints from all
+    :return:
+    """
+    from .classify import gauss
+    z = np.arange(1.0,2.81,0.01)
+    hostA = gauss( z, 1.80, 0.02, [1.0,2.8] )
+    hostB = gauss( z, 1.55, [0.66,-0.22], [1.0,2.8] )
+    combined = (hostA+hostB)/2.
+    fout = open('stone_hostAB_zprior.dat','w')
+    for i in range(len(z)):
+        print >> fout, '%8.3f  %12.5e'%(z[i],combined[i])
+    fout.close()
+    return(z,hostA,hostB,combined)
+
+
+
 def do_stone_fit():
     """  run three rounds of the nested sampling to get redshift posteriors with
       * just the wide band data, no host prior
@@ -45,19 +64,19 @@ def do_stone_fit():
 
     #TODO chdir to .dat dir
     stoneMB = readascii('HST_CANDELS4_stoneMB.sncosmo.dat')
-    stoneMBout = classify.get_evidence( stoneMB, zhost=1.8, zhosterr=5.0, zminmax=[1.3, 2.8], nobj=100, maxiter=10000 )
+    stoneMBout = classify.get_evidence( stoneMB, zhost=1.8, zhosterr=5.0, zminmax=[1.0, 2.8], nobj=100, maxiter=10000 )
     stoneMBpdfs = classify.get_marginal_pdfs( stoneMBout[1], nbins=35, verbose=True )
     io.misc.pickle_helpers.fnpickle( stoneMBpdfs, '../stone_posterior_pdfs_MB.pkl')
 
     stoneWB = readascii('HST_CANDELS4_stoneWB.sncosmo.dat')
-    stoneWBout = classify.get_evidence( stoneWB, zhost=1.8, zhosterr=5.0, zminmax=[1.3, 2.8], nobj=100, maxiter=10000 )
+    stoneWBout = classify.get_evidence( stoneWB, zhost=1.8, zhosterr=5.0, zminmax=[1.0, 2.8], nobj=100, maxiter=10000 )
     stoneWBpdfs = classify.get_marginal_pdfs( stoneWBout[1], nbins=35, verbose=True )
     io.misc.pickle_helpers.fnpickle( stoneWBpdfs, '../stone_posterior_pdfs_WB.pkl')
 
     stoneALL = readascii('HST_CANDELS4_stoneALL.sncosmo.dat')
-    stoneALLout = classify.get_evidence( stoneALL, zhost=1.80, zhosterr=0.02, zminmax=[1.3, 2.8], nobj=100, maxiter=10000 )
+    stoneALLout = classify.get_evidence( stoneALL, zhost='stone_hostAB_zprior.dat', zminmax=[1.0, 2.8], nobj=100, maxiter=10000 )
     stoneALLpdfs = classify.get_marginal_pdfs( stoneALLout[1], nbins=35, verbose=True )
-    io.misc.pickle_helpers.fnpickle( stoneALLpdfs, '../stone_posterior_pdfs.pkl')
+    io.misc.pickle_helpers.fnpickle( stoneALLpdfs, '../stone_posterior_pdfs_ALL.pkl')
     return( stoneMBout, stoneWBout, stoneALLout )
 
 
@@ -179,7 +198,7 @@ def mk_fig( sn, legend=False, nsmooth=3 ):
 
     pdfWB = io.misc.pickle_helpers.fnunpickle('../%s_posterior_pdfs_WB.pkl'%sn)
     pdfMB = io.misc.pickle_helpers.fnunpickle('../%s_posterior_pdfs_MB.pkl'%sn)
-    pdfALL = io.misc.pickle_helpers.fnunpickle('../%s_posterior_pdfs_ALL.pkl'%sn)
+    pdfALL = io.misc.pickle_helpers.fnunpickle('../%s_posterior_pdfs_ALLnohost.pkl'%sn)
 
     if sn == 'colfax' :
         zhost = 2.26
@@ -190,19 +209,24 @@ def mk_fig( sn, legend=False, nsmooth=3 ):
         z = np.linspace( 1.3,2.8,101 )
         def zprior( z ) :
             return( classify.gauss( z, zhost, zhosterr ) )
+        zhost_str='$z = %.2f \pm %.2f$'%( zhost, zhosterr[1] )
+
     elif sn == 'stone' :
+        zsamp, pdfsamp = np.loadtxt("../DATFILES/stone_hostAB_zprior.dat", unpack=True )
+        z = np.linspace( 1.0,2.8,101 )
+        zprior = interp1d( zsamp, pdfsamp, bounds_error=False, fill_value=0 )
         zhost = 1.80
         zhosterr = [-0.02,+0.02]
-        z = np.linspace( 1.3,2.8,101 )
-        def zprior( z ) :
-            return( classify.gauss( z, zhost, zhosterr ) )
+        zhost_str='\\noindent$z_{\\rm A} = %.2f\pm%.2f$ \\\\ $z_{\\rm B} = %.2f^{%+.2f}_{%+.2f}$'%(
+            1.80,0.02,1.55,0.66,-0.22)
+
     elif sn == 'bush' :
         zhost = 1.15
         zhosterr = [-0.38,+0.19]
         zsamp, pdfsamp = np.loadtxt("../HOSTS/SEDFITS/bushA_photoz_pdf.dat", unpack=True )
         z = np.linspace( 0, 3., 301 )
         zprior = interp1d( zsamp, pdfsamp, bounds_error=False, fill_value=0 )
-
+        zhost_str='$z = %.2f ^{%+.2f}_{%+.2f}$'%( zhost, zhosterr[1], zhosterr[0] )
 
     zstrlist = []
     for pdf in [ pdfWB, pdfMB, pdfALL ] :
@@ -211,13 +235,6 @@ def mk_fig( sn, legend=False, nsmooth=3 ):
         zerrminus = round( pdf['z'][2] - pdf['z'][3] - zpk, 2 )
         zstrlist.append( '$z = %.2f ^{%+.2f}_{%+.2f}$'%( zpk, zerrplus, zerrminus ) )
 
-    #zWB_str = '$z = %.2f \pm %.2f$'%(pdfWB['z'][2],pdfWB['z'][3])
-    #zMB_str = '$z = %.2f \pm %.2f$'%(pdfMB['z'][2],pdfMB['z'][3])
-    #zAll_str= '$z = %.2f \pm %.2f$'%(pdfALL['z'][2],pdfALL['z'][3])
-    #zhost_str='$z = %.2f ^{%+.2f}_{%+.2f}$'%( zhost, zhosterr[1], zhosterr[0] )
-    if sn in [ 'stone', 'colfax' ]:
-        zhost_str='$z = %.2f \pm %.2f$'%( zhost, zhosterr[1] )
-
     medsmooth = lambda f,N : np.array( [ np.mean( f[max(0,i-N):min(len(f),max(0,i-N)+2*N)]) for i in range(len(f)) ] )
     for x,y,c,fill in zip( [pdfWB['z'][0],pdfMB['z'][0],z,pdfALL['z'][0]],
                          [pdfWB['z'][1],pdfMB['z'][1],zprior(z),pdfALL['z'][1]],
@@ -225,10 +242,12 @@ def mk_fig( sn, legend=False, nsmooth=3 ):
                          [1,1,1,0]) :
         y = y /y.max()
         if fill :
-            pl.fill_between( x, np.zeros(len(y)), y, color=c, alpha=0.3 )
-        else :
             if nsmooth>1 :
                 y = medsmooth(y,nsmooth) / medsmooth(y,nsmooth).max()
+            pl.fill_between( x, np.zeros(len(y)), y, color=c, alpha=0.3 )
+        else :
+            if nsmooth<-1 :
+                y = medsmooth(y,-nsmooth) / medsmooth(y,-nsmooth).max()
             pl.plot( x, y, color=c, lw=1.7,  ls='-' )
 
     pl.xlabel('Redshift')
@@ -238,24 +257,24 @@ def mk_fig( sn, legend=False, nsmooth=3 ):
     if legend :
         pl.legend(loc='upper left', ncol=2, frameon=False, fontsize=10, handlelength=0.4, numpoints=3 )
     elif sn=='stone' :
-        ax.text( 2.2, 0.74, 'wide band\n light curve\n '+zstrlist[0], ha='center', va='bottom', color=textcolors[0], fontsize=10 )
-        ax.plot( [2.18,2.0], [0.72,0.57], ls='-', color=textcolors[0], lw=arrowlw )
+        ax.text( 2.48, 0.84, 'wide band\nlight curve\n '+zstrlist[0], ha='center', va='bottom', color=textcolors[0], fontsize=10 )
+        ax.plot( [2.43,2.0], [0.82,0.57], ls='-', color=textcolors[0], lw=arrowlw )
 
-        ax.text( 2.5, 0.56, 'med. band colors\n '+zstrlist[1], ha='center', va='bottom', color=textcolors[1], fontsize=10 )
+        ax.text( 2.5, 0.56, 'med. band\npseudo-colors\n '+zstrlist[1], ha='center', va='bottom', color=textcolors[1], fontsize=10 )
         ax.plot( [2.48,2.28], [0.54,0.41], ls='-', color=textcolors[1], lw=arrowlw )
 
-        ax.text( 1.50, 0.82, 'host prior\n '+zhost_str, ha='center', va='bottom', color=textcolors[2], fontsize=10 )
-        ax.plot( [1.52,1.8], [0.8,0.33], ls='-', color=textcolors[2],lw=arrowlw )
+        ax.text( 1.35, 0.79, 'host prior\n '+zhost_str, ha='center', va='bottom', color=textcolors[2], fontsize=10 )
+        ax.plot( [1.37,1.8], [0.77,0.33], ls='-', color=textcolors[2],lw=arrowlw )
 
-        ax.text( 1.84, 1.05, 'combined constraint\n'+zstrlist[2], ha='center', va='bottom', color='k', fontsize=10 )
-        ax.plot( [1.82,1.8], [1.04,0.98], ls='-', color='0.2',lw=arrowlw )
+        ax.text( 1.65, 1.05, 'combined constraint\n'+zstrlist[2], ha='center', va='bottom', color='k', fontsize=10 )
+        ax.plot( [1.68,1.83], [1.04,0.98], ls='-', color='0.2',lw=arrowlw )
 
         ax.text( 0.95, 0.95,  'GND13Sto', fontsize='large', ha='right', va='top', transform=ax.transAxes )
     elif sn=='colfax' :
-        ax.text( 2.60, 0.84, 'wide band\n light curve\n '+zstrlist[0], ha='center', va='bottom', color=textcolors[0], fontsize=10 )
+        ax.text( 2.60, 0.84, 'wide band\nlight curve\n '+zstrlist[0], ha='center', va='bottom', color=textcolors[0], fontsize=10 )
         ax.plot( [2.56,2.4], [0.82,0.42], ls='-', color=textcolors[0], lw=arrowlw )
 
-        ax.text( 1.57, 0.61, 'med. band colors\n '+zstrlist[1], ha='center', va='bottom', color=textcolors[1], fontsize=10 )
+        ax.text( 1.57, 0.61, 'med. band\npseudo-colors\n '+zstrlist[1], ha='center', va='bottom', color=textcolors[1], fontsize=10 )
         ax.plot( [1.62,2.02], [0.59,0.36], ls='-', color=textcolors[1], lw=arrowlw )
 
         ax.text( 1.82, 0.86, 'host prior\n '+zhost_str, ha='center', va='bottom', color=textcolors[2], fontsize=10 )
@@ -273,17 +292,17 @@ def mk_fig( sn, legend=False, nsmooth=3 ):
 
 
     elif sn=='bush' :
-        ax.text( 2.05, 0.84, 'wide band\nlight curve\n '+zWB_str, ha='center', va='bottom', color=cp.green, fontsize=10 )
-        # ax.plot( [2.56,2.45], [0.82,0.48], ls='-', color=cp.green, lw=arrowlw )
+        ax.text( 2.05, 0.84, 'wide band\nlight curve\n '+zstrlist[0], ha='center', va='bottom', color=textcolors[0], fontsize=10 )
+        ax.plot( [2.04,1.70], [0.83,0.64], ls='-', color=textcolors[0], lw=arrowlw )
 
-        ax.text( 2.02, 0.45, 'med. band\ncolors\n '+zMB_str, ha='center', va='bottom', color=cp.red, fontsize=10 )
-        # ax.plot( [1.62,2.0], [0.3,0.12], ls='-', color=cp.red, lw=arrowlw )
+        ax.text( 2.02, 0.45, 'med. band\ncolors\n '+zstrlist[1], ha='center', va='bottom', color=textcolors[1], fontsize=10 )
+        ax.plot( [2.03,1.84], [0.44,0.2], ls='-', color=textcolors[1], lw=arrowlw )
 
-        ax.text( 1.35, 1.05, 'host prior\n '+zhost_str, ha='center', va='bottom', color=cp.darkblue, fontsize=10 )
-        # ax.plot( [1.82,2.02], [1.04,0.73], ls='-', color=cp.darkblue,lw=arrowlw )
+        ax.text( 1.35, 1.05, 'host prior\n '+zhost_str, ha='center', va='bottom', color=textcolors[2], fontsize=10 )
+        ax.plot( [1.36,1.25], [1.03,0.79], ls='-', color=textcolors[2],lw=arrowlw )
 
-        ax.text( 0.83, 1.01, 'combined\nconstraint\n'+zAll_str, ha='center', va='bottom', color='k', fontsize=10 )
-        # ax.plot( [1.72,2.1], [0.68,0.33], ls='-', color='0.2',lw=arrowlw )
+        ax.text( 0.83, 1.01, 'combined\nconstraint\n'+zstrlist[2], ha='center', va='bottom', color='k', fontsize=10 )
+        ax.plot( [0.86,1.07], [0.98,0.86], ls='-', color='0.2',lw=arrowlw )
 
         ax.text( 0.95, 0.95,  'GSD11Bus', fontsize='large', ha='right', va='top', transform=ax.transAxes )
         ax.set_ylim( -0.003, 1.19 )
