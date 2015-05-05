@@ -14,6 +14,21 @@ SubClassDict_SNANA = {
            'ia': {'salt2':'Ia'},
 }
 
+SubClassDict_SNANAext = {
+           'ii':{
+               'iip.01':'IIP','iip.02':'IIP','iip.03':'IIP','iip.04':'IIP','iip.05':'IIP','iip.06':'IIP','iip.07':'IIP','iip.08':'IIP','iip.09':'IIP','iip.10':'IIP',
+               'iip.11':'IIP','iip.12':'IIP','iip.13':'IIP','iip.14':'IIP','iip.15':'IIP','iip.16':'IIP','iip.17':'IIP','iip.18':'IIP','iip.19':'IIP','iip.20':'IIP',
+               'iip.21':'IIP','iip.22':'IIP','iip.23':'IIP','iip.24':'IIP',
+               'iin.01':'IIn','iin.02':'IIn',
+               },
+           'ibc':{
+               'ib.01':'Ib','ib.02':'Ib','ib.03':'Ib','ib.04':'Ib','ib.05':'Ib','ib.06':'Ib','ib.07':'Ib',
+               'ic.01':'Ic','ic.02':'Ic','ic.03':'Ic','ic.04':'Ic','ic.05':'Ic','ic.06':'Ic','ic.07':'Ic','ic.08':'Ic','ic.09':'Ic',
+               },
+           'ia': {'salt2-extended':'Ia'},
+}
+
+
 
 SubClassDict_PSNID = {
            'ii':{ 's11-2004hx':'II','s11-2005lc':'IIP','s11-2005gi':'IIP','s11-2006jl':'IIP' },
@@ -233,7 +248,7 @@ def get_evidence( sn=testsnIa, modelsource='salt2',
         pdfint = integrate.simps( pdf[izgood], z[izgood] )
         pdf = pdf / pdfint
         zprior = interpolate.interp1d( z, pdf, bounds_error=False, fill_value=0)
-        import pdb; pdb.set_trace()
+        zhosterr=0.1
     else :
         if zhosterr is None :
             zhosterr = 0.1
@@ -262,9 +277,9 @@ def get_evidence( sn=testsnIa, modelsource='salt2',
         # define the Ia SALT2 model parameter bounds and priors
         model = sncosmo.Model( source=modelsource)
         if zhosterr>0.01 :
-            param_names = ['z','t0','x0','x1','c']
+            vparam_names = ['z','t0','x0','x1','c']
         else :
-            param_names = ['t0','x0','x1','c']
+            vparam_names = ['t0','x0','x1','c']
         bounds['x1'] = (-5.,5.)
         bounds['c'] = (-0.5,3.0)
         def x1prior( x1 ) :
@@ -285,9 +300,9 @@ def get_evidence( sn=testsnIa, modelsource='salt2',
                                effect_names=['host'], effect_frames=['rest'])
 
         if zhosterr>0.01 :
-            param_names = ['z','t0','amplitude','hostebv','hostr_v']
+            vparam_names = ['z','t0','amplitude','hostebv','hostr_v']
         else :
-            param_names = ['t0','amplitude','hostebv','hostr_v']
+            vparam_names = ['t0','amplitude','hostebv','hostr_v']
         bounds['hostebv'] = (0.0,1.0)
         bounds['hostr_v'] = (2.0,4.0)
         def rvprior( rv ) :
@@ -300,7 +315,7 @@ def get_evidence( sn=testsnIa, modelsource='salt2',
 
     model.set(z=np.mean(zminmax))
 
-    res, fit = sncosmo.fitting.nest_lc( sn, model, param_names, bounds,
+    res, fit = sncosmo.fitting.nest_lc( sn, model, vparam_names, bounds,
                                         guess_amplitude_bound=True,
                                         priors=priorfn,
                                         nobj=nobj, maxiter=maxiter,
@@ -325,13 +340,13 @@ def get_marginal_pdfs( res, nbins=51, verbose=True ):
     """
     import numpy as np
     import sncosmo
-    param_names = res.param_names
+    vparam_names = res.vparam_names
     weights = res.weights
     samples = res.samples
     pdfdict = {}
 
-    for param in param_names :
-        ipar = param_names.index( param )
+    for param in vparam_names :
+        ipar = vparam_names.index( param )
         paramvals = samples[:,ipar]
 
         if nbins>1:
@@ -389,7 +404,7 @@ def plot_marginal_pdfs( res, nbins=101, **kwargs):
     from matplotlib import pyplot as pl
     import numpy as np
 
-    nparam = len(res.param_names)
+    nparam = len(res.vparam_names)
     # nrow = np.sqrt( nparam )
     # ncol = nparam / nrow + 1
     nrow, ncol = 1, nparam
@@ -397,8 +412,8 @@ def plot_marginal_pdfs( res, nbins=101, **kwargs):
     pdfdict = get_marginal_pdfs( res, nbins )
 
     fig = pl.gcf()
-    for parname in res.param_names :
-        iax = res.param_names.index( parname )+1
+    for parname in res.vparam_names :
+        iax = res.vparam_names.index( parname )+1
         ax = fig.add_subplot( nrow, ncol, iax )
 
         parval, pdf, mean, std = pdfdict[parname]
@@ -442,6 +457,8 @@ def classify( sn, zhost=1., zhosterr=1., t0_range=None, zminmax=[0.1,2.8],
         SubClassDict = SubClassDict_PSNID
     elif templateset.lower()=='snana':
         SubClassDict = SubClassDict_SNANA
+    elif templateset.lower()=='snanaext':
+        SubClassDict = SubClassDict_SNANAext
     elif templateset.lower()=='notpsnid':
         SubClassDict = SubClassDict_NOTPSNID
 
