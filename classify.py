@@ -233,8 +233,8 @@ def get_evidence( sn=testsnIa, modelsource='salt2',
     tstart = time.time()
 
     # standardize the data column names and normalize to zpt=25 AB
-    sn = sncosmo.fitting.standardize_data( sn )
-    sn = sncosmo.fitting.normalize_data( sn )
+    #sn = sncosmo.fitting.photometric_data( sn )
+    #sn = sncosmo.fitting.normalize_data( sn )
 
     # Define parameter bounds and priors for z, x1, c, Rv, etc
     if zhost is None :
@@ -430,8 +430,9 @@ def plot_marginal_pdfs( res, nbins=101, **kwargs):
         else :
             ax.text( 0.95, 0.95, '%s  %.3e +- %.3e'%( parname, mean, std),
                      ha='right',va='top',transform=ax.transAxes )
-
     pl.draw()
+    return fig
+
 
 
 def classify( sn, zhost=1., zhosterr=1., t0_range=None, zminmax=[0.1,2.8],
@@ -462,9 +463,9 @@ def classify( sn, zhost=1., zhosterr=1., t0_range=None, zminmax=[0.1,2.8],
     elif templateset.lower()=='notpsnid':
         SubClassDict = SubClassDict_NOTPSNID
 
-    iimodelnames = SubClassDict['ii'].keys()
-    ibcmodelnames = SubClassDict['ibc'].keys()
-    iamodelnames = SubClassDict['ia'].keys()
+    iimodelnames = list(SubClassDict['ii'].keys())
+    ibcmodelnames = list(SubClassDict['ibc'].keys())
+    iamodelnames = list(SubClassDict['ia'].keys())
 
     outdict = {}
     allmodelnames = np.append(np.append(iimodelnames, ibcmodelnames), iamodelnames)
@@ -478,6 +479,7 @@ def classify( sn, zhost=1., zhosterr=1., t0_range=None, zminmax=[0.1,2.8],
     logz = { 'Ia':[], 'II':[], 'Ibc':[] }
     bestlogz = -np.inf
     for modelsource in allmodelnames :
+
         if verbose >1 :
             dt = time.time()-tstart
             print('------------------------------')
@@ -491,6 +493,8 @@ def classify( sn, zhost=1., zhosterr=1., t0_range=None, zminmax=[0.1,2.8],
             pdf =  get_marginal_pdfs( res, nbins=nsteps_pdf, verbose=max(0,verbose-1) )
         else :
             pdf = None
+      
+
         outdict[modelsource] = {'sn':sn, 'res':res, 'fit':fit, 'pdf':pdf, 'priorfn':priorfn }
 
         if res.logz>bestlogz :
